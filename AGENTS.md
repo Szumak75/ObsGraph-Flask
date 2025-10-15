@@ -355,6 +355,7 @@ def format_date(year: int, month: int) -> str:
 
 - Używaj specyficznych wyjątków zamiast ogólnego `Exception`
 - Twórz własne klasy wyjątków gdy potrzebne: `class CustomError(Exception)`
+- Do zgłaszania wyjątków używaj mechanizmu `jsktoolbox.raisetool.Raise.error(message, exception_type, class_name, frame)`
 - Dokumentuj wyjątki w docstringach (sekcja `### Raises`)
 - Używaj `try-except-finally` odpowiednio
 - Unikaj "gołych" `except:` - zawsze określ typ wyjątku
@@ -364,7 +365,7 @@ def format_date(year: int, month: int) -> str:
 
 ```python
 # Jeśli projekt ma własny mechanizm (jak w JskToolBox):
-from raisetool import Raise
+from jsktoolbox.raisetool import Raise
 raise Raise.error(message, exception_type, class_name, frame)
 ```
 
@@ -443,7 +444,7 @@ repos:
 - `CHANGELOG.md` - historia zmian (Keep a Changelog format)
 - `CONTRIBUTING.md` - przewodnik dla kontrybutorów
 - `LICENSE` - licencja projektu
-- `AGENTS.md` lub `AGENTS-TEMPLATE.md` - ten plik (konfiguracja AI)
+- `AGENTS.md` - ten plik (konfiguracja AI)
 
 **Format dokumentacji kodu:**
 
