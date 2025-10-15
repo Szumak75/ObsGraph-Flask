@@ -308,7 +308,7 @@ def format_date(year: int, month: int) -> str:
 
 **Konwencje testowe:**
 
-- Klasy testowe dziedziczą po `unittest.TestCase` (unittest) lub są funkcjami (pytest)
+- Klasy testowe dziedziczą po `unittest.TestCase` (unittest)
 - Jeden test = jedna funkcjonalność
 - Używaj fixtures dla konfiguracji testowej
 - Testy jednostkowe (unit) oraz integracyjne (integration) w osobnych katalogach

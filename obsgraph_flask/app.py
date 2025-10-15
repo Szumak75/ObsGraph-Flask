@@ -7,8 +7,8 @@ Purpose: Main Flask application for ObsGraph.
 
 from datetime import datetime
 from typing import List
-from flask import Flask, render_template, request
 
+from flask import Flask, render_template, request
 
 app: Flask = Flask(__name__)
 
