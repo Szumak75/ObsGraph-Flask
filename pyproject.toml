@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "obsgraph-flask"
+version = "0.1.0"
+description = "A Flask-based web application for Obsidian graph visualization and analysis"
+authors = ["Jacek Kotlarski <jacek.kotlarski@bioseco.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.0"
+jsktoolbox = "^1.2.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.0.0"
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+pycodestyle = "^2.11.0"
+isort = "^5.13.0"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
