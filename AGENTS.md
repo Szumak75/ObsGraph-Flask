@@ -9,6 +9,7 @@
 - **Główna biblioteka narzędziowa**: `jsktoolbox@^1.2.0`
 - **System zarządzania**: `Poetry`
 - **Repozytorium**: `git`
+- **Metodologia**: `TDD (Test-Driven Development)` - **WYMAGANE**
 
 ---
 
@@ -160,8 +161,11 @@ Uwzględnij pliki na podstawie wykrytej struktury projektu:
 **Konwencje kodowania:**
 
 - Przestrzegaj PEP 8 (Style Guide for Python Code)
-- Dodawaj adnotacje typów do nowych funkcji i metod
-- Używaj type hints zgodnie z PEP 484
+- **WYMAGANE**: Używaj modułu `typing` dla wszystkich deklaracji typów
+- **WYMAGANE**: Zawsze deklaruj typy zmiennych, argumentów funkcji i wartości zwracanych
+- Używaj type hints zgodnie z PEP 484 i PEP 526
+- Dla zmiennych lokalnych: `variable_name: type = value`
+- Dla argumentów funkcji: `def function(arg: type) -> return_type:`
 - Preferuj pojedyncze cudzysłowy `'string'`, chyba że podwójne są wymagane
 - Maksymalna długość linii: 88 znaków (black default) lub 79 (PEP 8)
 - Używaj f-strings do formatowania stringów (Python 3.6+)
@@ -235,6 +239,63 @@ IFS=$'\n\t'        # Bezpieczny Internal Field Separator
 
 ### Testowanie
 
+## **METODOLOGIA TDD (Test-Driven Development) - WYMAGANA**
+
+**Projekt stosuje obligatoryjnie metodologię TDD:**
+
+### Zasady TDD w projekcie:
+
+1. **RED → GREEN → REFACTOR**
+   - **RED**: Napisz test, który nie przechodzi (definiuje nową funkcjonalność)
+   - **GREEN**: Napisz minimalny kod, aby test przeszedł
+   - **REFACTOR**: Popraw kod zachowując działające testy
+
+2. **Kolejność prac**:
+   - ✅ **NAJPIERW**: Napisz unit testy dla nowej funkcjonalności
+   - ✅ **NASTĘPNIE**: Implementuj kod spełniający testy
+   - ✅ **NA KONIEC**: Refaktoryzacja i optymalizacja
+
+3. **Wyjątki od TDD**:
+   - Prototypy i proof-of-concept (wyraźnie oznaczone jako POC)
+   - Kod UI/szablonów HTML (testowany manualnie lub przez testy integracyjne)
+   - Skrypty one-off i narzędzia pomocnicze
+   - Kod konfiguracyjny bez logiki biznesowej
+
+4. **Pokrycie testami**:
+   - Cel: **minimum 80% pokrycia kodu**
+   - Sprawdzanie: `poetry run pytest --cov=obsgraph_flask --cov-report=html`
+   - Każda funkcja/metoda z logiką biznesową musi mieć testy
+
+5. **Struktura testów**:
+   - Testy w katalogu `tests/`
+   - Struktura mirror do kodu źródłowego
+   - Nazewnictwo: `test_<module_name>.py`
+
+### Przykład workflow TDD:
+
+```python
+# Krok 1: Napisz test (RED)
+# tests/test_date_formatter.py
+from obsgraph_flask.date_formatter import format_date
+
+def test_format_date_returns_correct_format() -> None:
+    result = format_date(2025, 10)
+    assert result == "2025-10"
+
+# Krok 2: Uruchom test - powinien nie przejść
+# $ poetry run pytest tests/test_date_formatter.py
+# FAILED - ModuleNotFoundError
+
+# Krok 3: Napisz minimalny kod (GREEN)
+# obsgraph_flask/date_formatter.py
+def format_date(year: int, month: int) -> str:
+    return f"{year:04d}-{month:02d}"
+
+# Krok 4: Test przechodzi - możesz refaktoryzować
+```
+
+---
+
 #### Python
 
 **Framework i organizacja:**
@@ -252,6 +313,8 @@ IFS=$'\n\t'        # Bezpieczny Internal Field Separator
 - Używaj fixtures dla konfiguracji testowej
 - Testy jednostkowe (unit) oraz integracyjne (integration) w osobnych katalogach
 - Zapewnij pokrycie testami każdej nowej funkcjonalności (cel: >80%)
+- **ZAWSZE** pełne typowanie testów: argumenty, zwracane wartości, zmienne
+- Nazwy testów opisowe: `test_should_return_formatted_date_when_valid_input()`
 
 #### Shell Scripts
 
@@ -349,8 +412,10 @@ raise Raise.error(message, exception_type, class_name, frame)
 
 - Opisuj zmiany szczegółowo
 - Linkuj do issues jeśli dotyczy
+- **WYMAGANE**: Wszystkie testy muszą przechodzić (zielone CI)
+- **WYMAGANE**: Pokrycie kodu nie może spaść poniżej 80%
 - Wykonaj review przed merge
-- Uruchom testy przed PR
+- Dla nowych funkcjonalności: dołącz testy napisane zgodnie z TDD
 
 **Pre-commit hooks (opcjonalnie):**
 
@@ -398,6 +463,7 @@ repos:
 **Podejście do zmian:**
 
 - Zachowuj zwięzłą, techniczną formę odpowiedzi
+- **TDD FIRST**: Zawsze zacznij od testów dla nowej funkcjonalności
 - Przy zmianach obejmujących wiele plików przedstaw plan i poproś o akceptację
 - Testuj zmiany przed commitem
 - Dokumentuj nieoczywiste decyzje projektowe
@@ -406,10 +472,14 @@ repos:
 
 **Code Review Checklist:**
 
+- [ ] **TDD**: Testy zostały napisane PRZED implementacją (dla nowych funkcji)
+- [ ] **Testy**: Wszystkie testy przechodzą (`poetry run pytest`)
+- [ ] **Pokrycie**: Pokrycie kodu ≥ 80% (`poetry run pytest --cov`)
+- [ ] **Typy**: Wszystkie zmienne, argumenty i zwracane wartości mają typy
+- [ ] **Mypy**: Brak błędów typowania (`poetry run mypy`)
 - [ ] Kod jest zgodny z konwencjami projektu
-- [ ] Testy zostały dodane/zaktualizowane
 - [ ] Dokumentacja jest aktualna
-- [ ] Brak ostrzeżeń z linterów
+- [ ] Brak ostrzeżeń z linterów (`poetry run black`, `poetry run pycodestyle`)
 - [ ] Zmiany nie psują istniejącej funkcjonalności
 - [ ] Obsługa błędów jest poprawna
 - [ ] Kod jest czytelny i zrozumiały

@@ -8,6 +8,7 @@ A Flask-based web application for Observium graph visualization and analysis.
 - **Framework**: Flask
 - **Main Utility Library**: jsktoolbox@^1.2.0
 - **Project Management**: Poetry
+- **Development Methodology**: TDD (Test-Driven Development)
 
 ## Prerequisites
 
@@ -34,9 +35,30 @@ This will create a virtual environment and install all necessary dependencies in
 The project uses the following development tools:
 
 - **black**: Code formatter
-- **pytest**: Testing framework
-- **pycodestyle**: PEP 8 compliance checker (optional)
-- **isort**: Import sorting (optional)
+- **pytest**: Testing framework with coverage support
+- **pytest-cov**: Code coverage measurement
+- **mypy**: Static type checker
+- **pycodestyle**: PEP 8 compliance checker
+- **isort**: Import sorting
+
+### Code Quality Commands
+
+```bash
+# Run tests with coverage
+poetry run pytest --cov=obsgraph_flask --cov-report=html
+
+# Type checking
+poetry run mypy obsgraph_flask/
+
+# Code formatting
+poetry run black obsgraph_flask/
+
+# Import sorting
+poetry run isort obsgraph_flask/
+
+# Style checking
+poetry run pycodestyle obsgraph_flask/
+```
 
 ## Usage
 
@@ -71,13 +93,40 @@ ObsGraph-Flask/
 
 ## Contributing
 
-When contributing to this project, please:
+This project follows **Test-Driven Development (TDD)** methodology.
 
-1. Follow PEP 8 style guidelines
-2. Use type hints for all functions and methods
-3. Write tests for new functionality
-4. Format code with `black` before committing
-5. Ensure all tests pass
+### Development Workflow
+
+1. **Write Tests First** (RED phase)
+   - Write unit tests for the new functionality
+   - Tests should fail initially
+
+2. **Implement Functionality** (GREEN phase)
+   - Write minimal code to make tests pass
+   - All tests must pass
+
+3. **Refactor** (REFACTOR phase)
+   - Improve code quality while keeping tests green
+   - Maintain or improve code coverage
+
+### Code Quality Requirements
+
+- ✅ Follow PEP 8 style guidelines
+- ✅ **Required**: Full type hints (typing module) for all variables, arguments, and return values
+- ✅ **Required**: Write tests BEFORE implementing new features
+- ✅ **Required**: Maintain minimum 80% code coverage
+- ✅ Format code with `black` before committing
+- ✅ Ensure all tests pass: `poetry run pytest`
+- ✅ Ensure type checking passes: `poetry run mypy obsgraph_flask/`
+- ✅ Write descriptive docstrings in English (Google style)
+
+### Testing Standards
+
+- Location: `tests/` directory
+- Naming: `test_*.py`
+- Framework: pytest
+- Coverage target: ≥ 80%
+- Run tests: `poetry run pytest --cov=obsgraph_flask`
 
 ## License
 

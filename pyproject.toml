@@ -16,6 +16,7 @@ pytest = "^8.0.0"
 pytest-cov = "^4.1.0"
 pycodestyle = "^2.11.0"
 isort = "^5.13.0"
+mypy = "^1.5.0"
 
 [tool.black]
 line-length = 88
@@ -44,6 +45,22 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+extra_checks = true
 
 [build-system]
 requires = ["poetry-core"]
