@@ -10,6 +10,7 @@
 - **System zarządzania**: `Poetry`
 - **Repozytorium**: `git`
 - **Metodologia**: `TDD (Test-Driven Development)` - **WYMAGANE**
+- **Author**: `Jacek Kotlarski --<jacek.kotlarski@bioseco.com>`
 
 ---
 
@@ -148,34 +149,28 @@ Uwzględnij pliki na podstawie wykrytej struktury projektu:
 
 **Formatowanie i walidacja:**
 
-- **Formatter**: `black` - automatyczne formatowanie kodu
-  - Uruchamianie: `poetry run black .` lub `black .`
-  - Konfiguracja: Sprawdź `[tool.black]` w `pyproject.toml`
-- **Linter**: `pycodestyle` lub `flake8` - zgodność z PEP 8
-  - Uruchamianie: `poetry run pycodestyle .` lub `flake8 .`
-- **Type checking**: `mypy` - sprawdzanie typów (opcjonalnie)
-  - Uruchamianie: `poetry run mypy .`
-- **Import sorting**: `isort` - sortowanie importów (opcjonalnie)
-  - Uruchamianie: `poetry run isort .`
+- Formatuj kod przy użyciu `black`; po każdej zmianie uruchom `poetry run black .` (konfiguracja w `[tool.black]`).
+- Pliki Markdown formatuj przy użyciu `prettier`; korzystaj z `poetry run prettier --write <ścieżka>`, aby utrzymać spójny styl dokumentacji.
+- Waliduj zgodność z PEP 8 poleceniem `poetry run pycodestyle`.
+- Dodawaj adnotacje typów do wszystkich nowych funkcji, metod i zmiennych.
+- Preferuj pojedyncze cudzysłowy `'string'`, chyba że wymagane są podwójne.
 
 **Konwencje kodowania:**
 
-- Przestrzegaj PEP 8 (Style Guide for Python Code)
-- **WYMAGANE**: Używaj modułu `typing` dla wszystkich deklaracji typów
-- **WYMAGANE**: Zawsze deklaruj typy zmiennych, argumentów funkcji i wartości zwracanych
-- Używaj type hints zgodnie z PEP 484 i PEP 526
-- Dla zmiennych lokalnych: `variable_name: type = value`
-- Dla argumentów funkcji: `def function(arg: type) -> return_type:`
-- Preferuj pojedyncze cudzysłowy `'string'`, chyba że podwójne są wymagane
-- Maksymalna długość linii: 88 znaków (black default) lub 79 (PEP 8)
-- Używaj f-strings do formatowania stringów (Python 3.6+)
+- Przestrzegaj PEP 8 oraz wykorzystuj moduł `typing` dla wszystkich deklaracji typów.
+- Dla zmiennych lokalnych stosuj formę `variable_name: Type = value`; dla argumentów `def function(arg: Type) -> ReturnType:`.
+- Maksymalna długość linii: 88 znaków (domyślnie `black`); trzymaj się 79 znaków, jeśli wymagają tego wytyczne zespołu.
+- Używaj f-stringów do formatowania stringów w Pythonie 3.11+.
 
 **Docstringi:**
 
-- Format: Google style lub NumPy style (określ preferowany)
-- Struktura: Krótka linia streszczenia, następnie sekcje
-- Sekcje: `### Arguments`, `### Returns`, `### Raises`, `### Examples`
-- Język: Angielski (kod i dokumentacja techniczna)
+- Pisane wyłącznie w języku angielskim.
+- Docstring modułu rozpoczynaj liniami: `Author:  ObsGraph Team --<dev@obsgraph.local>`, `Created: YYYY-MM-DD`, `Purpose: ...`.
+- Docstring funkcji/metod zawiera krótkie streszczenie, po którym opcjonalnie następują sekcje `### Arguments`, `### Returns`, `### Raises`, `### Examples`.
+- Sekcja `### Arguments` jest obowiązkowa dla każdej funkcji/metody przyjmującej parametry (poza komparatorami i getterami); dodawaj ją również w `__init__` i setterach.
+- Sekcja `### Returns` może być pominięta tylko, gdy metoda zwraca `None`.
+- Sekcję `### Raises` dodawaj wyłącznie, jeśli implementacja faktycznie rzuca wyjątki.
+- Zapewnij spójny wpis autora `ObsGraph Team --<dev@obsgraph.local>` we wszystkich docstringach.
 
 #### Shell Scripts
 
@@ -451,6 +446,80 @@ repos:
 - API: Generuj ze źródeł (Sphinx dla Python, POD dla Perl)
 - Przykłady użycia w `examples/` lub `samples/`
 - Diagramy w `docs/diagrams/` (PlantUML, Mermaid, lub obrazy)
+
+### Wzorce architektury
+
+#### Użycie JskToolBox
+
+##### Klasy bazowe z `basetool`
+
+- Wykorzystuj klasy z modułu `jsktoolbox.basetool` jako bazowe; nie wymagają wywołania `super().__init__()`.
+- Klasy bazowe rozszerzają API klas pochodnych o gotowe właściwości i metody.
+- Dla wątków preferuj `ThBaseObject` w połączeniu z `threading.Thread`, np. `class Worker(ThBaseObject, Thread)`.
+
+##### `ReadOnlyClass` — niemutowalne klucze
+
+Zawsze stosuj `ReadOnlyClass` dla kluczy używanych w `BData`:
+
+```python
+from jsktoolbox.attribtool import ReadOnlyClass
+from jsktoolbox.basetool import BData
+
+
+class MyClass(BData):
+    class _Keys(object, metaclass=ReadOnlyClass):
+        DATA: str = "data"
+
+
+class _Keys(object, metaclass=ReadOnlyClass):
+    CONFIG: str = "config"
+
+
+class ProjectKeys(object, metaclass=ReadOnlyClass):
+    APP_NAME: str = "app_name"
+```
+
+##### `BData` — typowany magazyn
+
+`BData` zapewnia bezpieczny kontener słownikowy z kontrolą typów.
+
+**Zasady:**
+
+1. Rejestruj typy w setterach z `set_default_type` wewnątrz `_set_data()`.
+2. `_get_data()` nie ustawia typu; korzysta wyłącznie z zarejestrowanych wartości.
+3. Aby zmienić typ, najpierw wywołaj `_delete_data()`, następnie ustaw nową wartość.
+4. `set_default_type=None` zachowuje istniejący typ (None nie resetuje typu).
+5. Obsługuj typy złożone (`Optional[T]`, `Dict[K, V]`, `List[T]`, `Union`) zgodnie z adnotacjami.
+
+**Preferowane wzorce:**
+
+```python
+self._set_data("key", 42, set_default_type=int)
+value = self._get_data("key", default_value=0)
+self._set_data("key", 100)
+
+from typing import Optional, Dict, List
+
+self._set_data("text", "value", set_default_type=Optional[str])
+self._set_data("config", {"a": 1}, set_default_type=Dict[str, int])
+self._set_data("items", ["a", "b"], set_default_type=List[str])
+```
+
+**Dodatkowe metody:**
+
+- `_copy_data(key)` — zwraca kopię głęboką wartości.
+- `_delete_data(key)` — usuwa wartość i constraint typu.
+- `_clear_data(key)` — usuwa wartość, zachowując constraint typu.
+
+##### Leniwe importy
+
+- Preferuj skrócone importy udostępniane w `__init__.py` poszczególnych modułów (`from jsktoolbox.configtool import Config`).
+- Unikaj głębokich ścieżek (`from jsktoolbox.configtool.main import Config`), jeśli dostępna jest leniwa re-eksportowana wersja.
+
+##### Obsługa wyjątków
+
+- Do zgłaszania wyjątków stosuj `raise Raise.error(...)` z `jsktoolbox.raisetool`; samo wywołanie `Raise.error(...)` nie rzuca wyjątku.
+- Przekazuj `currentframe=currentframe()` oraz `class_name=self._c_name`, aby zachować pełny kontekst diagnostyczny.
 
 ### Ogólne zalecenia
 
