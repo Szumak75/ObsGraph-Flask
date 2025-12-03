@@ -5,7 +5,8 @@ obsgraph_configurator.py
 Author : Jacek 'Szumak' Kotlarski --<szumak@virthost.pl>
 Created: 17.10.2025, 12:30:19
 
-Purpose:
+Purpose: ObsGraph configuration tool
+License: MIT
 """
 
 import os
