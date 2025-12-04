@@ -127,7 +127,11 @@
             
             <div class="form-group">
                 <label for="day">&nbsp;</label>
-                <button type="submit">Submit</button>
+                <button type="submit">Submit</button>        current_dir: str = os.path.dirname(os.path.abspath(__file__))
+        config_file_path: str = os.path.join(
+            f"{current_dir}/../../etc/", ObsKeys.CONF_FILE
+        )
+
             </div>
         </div>
     </form>
