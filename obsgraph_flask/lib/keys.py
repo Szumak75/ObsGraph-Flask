@@ -18,7 +18,7 @@ class ObsKeys(object, metaclass=ReadOnlyClass):
     # Application secret key
     CONF_MAIN_SECTION_NAME: str = "ObsGraphFlaskApp"
     CONF_SALT: str = "salt"
-    CONF_OBSERVIUM_API_URL: str = "observium_api_url"
+    CONF_OBSERVIUM_API_URL: str = "observium_url"
     CONF_API_LOGIN: str = "api_login"
     CONF_API_PASSWORD: str = "api_password"
     CONF_FILE: str = "obsgraph.conf"
