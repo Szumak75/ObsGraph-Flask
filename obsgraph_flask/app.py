@@ -6,12 +6,14 @@ Purpose: Main Flask application for ObsGraph.
 License: MIT
 """
 
+import base64
 from datetime import datetime
 from inspect import currentframe
 from logging import ERROR
 import os
 from typing import Any, List, Optional, Tuple
 
+import requests
 from flask import Flask, render_template, request
 
 from lib.keys import ObsKeys
@@ -76,6 +78,7 @@ class ObsGraphApp(BData):
             ObsKeys.CONF_OBSERVIUM_API_URL,
             ObsKeys.CONF_API_LOGIN,
             ObsKeys.CONF_API_PASSWORD,
+            ObsKeys.CONF_PORT_IDS,
         ]
 
         for key in required_keys:
@@ -85,19 +88,83 @@ class ObsGraphApp(BData):
                 error_message: str = f"Missing required configuration key: {key}"
                 self.error_messages.append(error_message)
 
-    def get_observium_charts(self, year: int, month: int) -> Optional[Any]:
+    def get_observium_charts(self, year: int, month: int) -> Optional[str]:
         """Get Observium charts for the given year and month.
-        ### Args:
-        year (int): The year.
-        month (int): The month.
-        ### Returns:
-        Optional[tuple]: A tuple containing chart data, or None if error.
-        """
-        # curl template:
-        # curl -u {self.conf_api_login}:{self.conf_api_password} "{self.conf_observium_url}/graph.php?type=multi-port_bits&id=496,508&from={self.__get_month_timestamp_range(year, month)[0]}&to={self.__get_month_timestamp_range(year, month)[1]}&height=748&width=1024"
-        # Placeholder implementation
 
-        return None
+        ### Arguments:
+        * year: int - The year for which to retrieve the chart.
+        * month: int - The month for which to retrieve the chart.
+
+        ### Returns:
+        Optional[str] - Base64 encoded image data for embedding in HTML, or None if error occurs.
+
+        ### Examples:
+        curl template:
+        curl -u {self.conf_api_login}:{self.conf_api_password} "{self.conf_observium_url}/graph.php?type=multi-port_bits&id=496,508&from={self.__get_month_timestamp_range(year, month)[0]}&to={self.__get_month_timestamp_range(year, month)[1]}&height=748&width=1024"
+        """
+        # Check if configuration is available
+        if self.has_errors:
+            return None
+
+        # Get timestamp range for the month
+        start_ts, end_ts = self.__get_month_timestamp_range(year, month)
+
+        # Build the API URL
+        url: str = (
+            f"{self.conf_observium_url}/graph.php?"
+            f"type=multi-port_bits&"
+            f"id={self.conf_port_ids}&"
+            f"from={start_ts}&"
+            f"to={end_ts}&"
+            f"height=600&"
+            f"width=1024"
+        )
+
+        try:
+            # Make the API request with basic authentication
+            response: requests.Response = requests.get(
+                url,
+                auth=(self.conf_api_login, self.conf_api_password),
+                timeout=30,
+            )
+
+            # Check if request was successful
+            if response.status_code != 200:
+                error_msg: str = f"Failed to fetch chart: HTTP {response.status_code}"
+                self.error_messages.append(error_msg)
+                return None
+
+            # Check if response contains image data
+            content_type: str = response.headers.get("Content-Type", "")
+            if "image" not in content_type:
+                error_msg = (
+                    f"Unexpected content type: {content_type}. " f"Expected image data."
+                )
+                self.error_messages.append(error_msg)
+                return None
+
+            # Encode image to base64 for HTML embedding
+            image_base64: str = base64.b64encode(response.content).decode("utf-8")
+            return f"data:{content_type};base64,{image_base64}"
+
+        except requests.exceptions.Timeout:
+            self.error_messages.append(
+                "Request timeout: Observium API did not respond in time."
+            )
+            return None
+        except requests.exceptions.ConnectionError:
+            self.error_messages.append(
+                "Connection error: Unable to connect to Observium API."
+            )
+            return None
+        except requests.exceptions.RequestException as exc:
+            self.error_messages.append(f"Request error: {str(exc)}")
+            return None
+        except Exception as exc:
+            self.error_messages.append(
+                f"Unexpected error while fetching chart: {str(exc)}"
+            )
+            return None
 
     def __get_month_timestamp_range(self, year: int, month: int) -> Tuple[int, int]:
         """Get the start and end timestamps for a given month and year.
@@ -206,6 +273,21 @@ class ObsGraphApp(BData):
             return ""
         return SimpleCrypto.multiple_decrypt(self.conf_salt, value)
 
+    @property
+    def conf_port_ids(self) -> str:
+        """Get the port IDs from configuration.
+
+        ### Returns:
+        str - Comma-separated port IDs for the Observium API request.
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_IDS
+        )
+        if value is None:
+            self.error_messages.append("Port IDs not found in configuration.")
+            return ""
+        return value
+
 
 # Initialize Flask application
 app: Flask = Flask(__name__)
@@ -235,7 +317,12 @@ def index() -> str:
     # Format selected date
     selected_date: str = f"{selected_year:04d}-{selected_month:02d}"
 
-    # Errors
+    # Get chart from Observium API
+    chart_image: Optional[str] = obs_app.get_observium_charts(
+        selected_year, selected_month
+    )
+
+    # Collect errors
     error_messages: List[str] = []
     while obs_app.error_messages:
         line: str = obs_app.error_messages.pop()
@@ -253,6 +340,7 @@ def index() -> str:
         selected_year=selected_year,
         selected_month=selected_month,
         selected_date=selected_date,
+        chart_image=chart_image,
         errors=error_messages,
     )
 

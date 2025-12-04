@@ -73,7 +73,22 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 100px 20px 20px 20px;
+        }
+        
+        .chart-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 90%;
+        }
+        
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            display: block;
         }
         
         .date-display {
@@ -85,6 +100,13 @@
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             font-family: 'Courier New', monospace;
+        }
+        
+        .no-data {
+            font-size: 24px;
+            color: #666;
+            text-align: center;
+            padding: 40px;
         }
         
         label {
@@ -165,9 +187,17 @@
     </form>
     
     <div class="content">
-        <div class="date-display">
-            {{ selected_date }}
+        {% if chart_image %}
+        <div class="chart-container">
+            <img src="{{ chart_image }}" alt="Observium Chart for {{ selected_date }}" class="chart-image">
         </div>
+        {% else %}
+        <div class="chart-container">
+            <div class="no-data">
+                No chart data available for {{ selected_date }}
+            </div>
+        </div>
+        {% endif %}
     </div>
     
     {% if errors %}
