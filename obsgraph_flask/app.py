@@ -304,8 +304,8 @@ def index() -> str:
     current_year: int = datetime.now().year
     current_month: int = datetime.now().month
 
-    # Generate year list (current year + 3 years back)
-    years: List[int] = list(range(current_year, current_year - 4, -1))
+    # Generate year list (current year + 1 years back)
+    years: List[int] = list(range(current_year, current_year - 2, -1))
 
     # Generate month list (1-12)
     months: List[int] = list(range(1, 13))
@@ -327,10 +327,6 @@ def index() -> str:
     while obs_app.error_messages:
         line: str = obs_app.error_messages.pop()
         error_messages.append(line)
-
-    # # Test get_month_timestamp_range
-    # start_ts, end_ts = obs_app.get_month_timestamp_range(selected_year, selected_month)
-    # print(f"Selected month {selected_date} has timestamps: {start_ts} - {end_ts}")
 
     # Render template with data
     return render_template(

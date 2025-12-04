@@ -45,6 +45,8 @@ class _Keys(object, metaclass=ReadOnlyClass):
     LONG_PASSWORD: str = "password"
     SHORT_HELP: str = "h"
     LONG_HELP: str = "help"
+    SHORT_IDS: str = "i"
+    LONG_IDS: str = "ids"
 
 
 class ObsGraphConfigurator(BData):
@@ -151,6 +153,15 @@ class ObsGraphConfigurator(BData):
                     value=encrypted_password,
                 )
                 update = True
+        if cli.has_option(_Keys.LONG_IDS):
+            ids_value: Optional[str] = cli.get_option(_Keys.LONG_IDS)
+            if ids_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_PORT_IDS,
+                    value=ids_value,
+                )
+                update = True
 
         # Save updated configuration if any changes were made
         if update:
@@ -195,6 +206,15 @@ class ObsGraphConfigurator(BData):
             example_value="api_password",
         )
 
+        # Port IDs
+        cli.configure_option(
+            short_arg=_Keys.SHORT_IDS,
+            long_arg=_Keys.LONG_IDS,
+            desc_arg="Comma-separated port IDs for multi-port graphs",
+            has_value=True,
+            example_value="496,508",
+        )
+
     def __create_config(self) -> None:
         """Create a default configuration file if it does not exist."""
         conf: Config = self.__config
@@ -229,6 +249,12 @@ class ObsGraphConfigurator(BData):
                 varname=ObsKeys.CONF_API_PASSWORD,
                 value="",
                 desc="Observium API password (encrypted)",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_PORT_IDS,
+                value="",
+                desc="Comma-separated port IDs for multi-port graphs",
             )
             conf.save()
 
