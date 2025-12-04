@@ -1,12 +1,21 @@
 # ObsGraph-Flask
 
-ObsGraph-Flask is a Flask-based web application for Observium graph visualization and analysis. The project embraces strong automation support through a dedicated AI agent configuration (`AGENTS.md`) that mirrors the standards defined in the JskToolBox ecosystem.
+ObsGraph-Flask is a Flask-based web application for Observium network monitoring graph visualization and analysis. The application fetches and displays network traffic graphs from Observium API with an intuitive date selection interface. The project embraces strong automation support through a dedicated AI agent configuration (`AGENTS.md`) that mirrors the standards defined in the JskToolBox ecosystem.
+
+## Features
+
+- **Interactive Date Selection**: Choose year and month to view network traffic data
+- **Observium API Integration**: Seamlessly fetches multi-port traffic graphs from Observium
+- **Responsive UI**: Clean, modern interface with real-time error feedback
+- **Secure Configuration**: Encrypted password storage using JskToolBox crypto utilities
+- **Configuration Tool**: CLI utility for managing application settings
 
 ## Project Overview
 
 - **Language**: Python 3.11+
-- **Framework**: Flask
+- **Framework**: Flask 3.0+
 - **Primary Utility Library**: `jsktoolbox@^1.2.0`
+- **HTTP Client**: `requests@^2.31.0`
 - **Package Name**: `obsgraph_flask`
 - **Dependency & Environment Manager**: Poetry
 - **Delivery Methodology**: Test-Driven Development (TDD)
@@ -18,6 +27,8 @@ ObsGraph-Flask is a Flask-based web application for Observium graph visualizatio
 
 ## Quick Start
 
+### 1. Installation
+
 ```bash
 git clone <repository-url>
 cd ObsGraph-Flask
@@ -25,6 +36,37 @@ poetry install
 ```
 
 This command sequence creates an isolated virtual environment and installs all runtime and development dependencies declared in `pyproject.toml`.
+
+### 2. Configuration
+
+Configure the application using the CLI tool:
+
+```bash
+poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
+  --url "https://observium.example.com" \
+  --login "api_user" \
+  --password "api_password" \
+  --ids "496,508"
+```
+
+Or manually edit `etc/obsgraph.conf`:
+
+```ini
+[ObsGraphFlaskApp]
+salt = 5083235041753769
+observium_url = "https://observium.example.com/"
+api_login = "api_user"
+api_password = "encrypted_password_here"
+port_ids = "496,508"
+```
+
+### 3. Run the Application
+
+```bash
+poetry run python obsgraph_flask/app.py
+```
+
+The application will be available at `http://127.0.0.1:5000/`
 
 ## Development Toolkit
 
@@ -54,35 +96,90 @@ poetry run isort obsgraph_flask/ tests/
 poetry run pycodestyle obsgraph_flask/
 ```
 
+## Configuration Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `salt` | int | Yes | Salt value for password encryption |
+| `observium_url` | str | Yes | Base URL of Observium instance |
+| `api_login` | str | Yes | API username |
+| `api_password` | str | Yes | Encrypted API password |
+| `port_ids` | str | Yes | Comma-separated port IDs for graphs |
+
 ## Usage
 
 ### Run the Application
 
 ```bash
+# Option 1: Direct execution
+poetry run python obsgraph_flask/app.py
+
+# Option 2: Flask development server
 poetry run flask run
+
+# Option 3: Activated virtual environment
+poetry shell
+python obsgraph_flask/app.py
+```
+
+### Configure the Application
+
+```bash
+# Using CLI tool
+poetry run python obsgraph_flask/tools/obsgraph_configurator.py --help
+
+# Using shell wrapper
+./bin/osbgraph-config.sh --url "https://observium.example.com" --login "api" --password "secret" --ids "496,508"
 ```
 
 ### Execute Tests
 
 ```bash
+# Run all tests
 poetry run pytest
+
+# Run with coverage report
+poetry run pytest --cov=obsgraph_flask --cov-report=html
 ```
 
 ### Apply Formatting
 
 ```bash
+# Format code
 poetry run black .
+
+# Sort imports
+poetry run isort .
+
+# Check style
+poetry run pycodestyle obsgraph_flask/
 ```
 
 ## Project Layout
 
 ```
 ObsGraph-Flask/
-├── obsgraph_flask/       # Application package
-├── tests/                # Test suite (pytest)
-├── pyproject.toml        # Poetry configuration and dependencies
-├── README.md             # Project overview and guidelines
-└── AGENTS.md             # AI assistant configuration (see below)
+├── obsgraph_flask/              # Application package
+│   ├── app.py                   # Main Flask application
+│   ├── lib/                     # Library modules
+│   │   └── keys.py              # Configuration keys
+│   ├── templates/               # Jinja2 templates
+│   │   └── index.html           # Main page template
+│   └── tools/                   # CLI utilities
+│       └── obsgraph_configurator.py  # Configuration tool
+├── bin/                         # Shell scripts
+│   └── osbgraph-config.sh       # Configuration wrapper script
+├── etc/                         # Configuration files
+│   ├── obsgraph.conf            # Main configuration
+│   └── README.md                # Configuration documentation
+├── tests/                       # Test suite (pytest)
+│   ├── test_app.py              # Application tests
+│   └── test_basic.py            # Basic functionality tests
+├── pyproject.toml               # Poetry configuration and dependencies
+├── poetry.lock                  # Locked dependencies
+├── README.md                    # Project overview and guidelines
+├── QUICKSTART.md                # Quick start guide
+└── AGENTS.md                    # AI assistant configuration
 ```
 
 ## Contributing Guidelines

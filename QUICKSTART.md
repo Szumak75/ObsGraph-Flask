@@ -1,5 +1,37 @@
 # ObsGraph Flask - Quick Start
 
+## Wstępna konfiguracja
+
+### 1. Instalacja zależności
+```bash
+cd ObsGraph-Flask
+poetry install
+```
+
+### 2. Konfiguracja połączenia z Observium
+
+#### Opcja A: Użycie narzędzia CLI
+```bash
+poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
+  --url "https://observium.bioseco.com" \
+  --login "api" \
+  --password "your_password" \
+  --ids "496,508"
+```
+
+#### Opcja B: Ręczna edycja pliku konfiguracyjnego
+Edytuj plik `etc/obsgraph.conf`:
+```ini
+[ObsGraphFlaskApp]
+salt = 5083235041753769
+observium_url = "https://observium.bioseco.com/"
+api_login = "api"
+api_password = "encrypted_password"
+port_ids = "496,508"
+```
+
+**Uwaga**: Hasło musi być zaszyfrowane przy użyciu `SimpleCrypto.multiple_encrypt()` z JskToolBox.
+
 ## Uruchomienie aplikacji
 
 ### Opcja 1: Bezpośrednio przez Poetry
@@ -17,10 +49,12 @@ Aplikacja będzie dostępna pod adresem: http://127.0.0.1:5000/
 
 ## Funkcjonalność
 
-- **Wybór roku**: Lista rozwijana z bieżącym rokiem i 3 latami wstecz
+- **Wybór roku**: Lista rozwijana z bieżącym rokiem i 1 rokiem wstecz
 - **Wybór miesiąca**: Lista rozwijana z miesiącami w formacie cyfrowym (01-12)
-- **Przycisk Submit**: Zatwierdza wybór i przeładowuje stronę zachowując selekcję
-- **Wyświetlanie daty**: Wybrana data wyświetlana w formacie YYYY-MM na środku strony
+- **Przycisk Submit**: Zatwierdza wybór i pobiera wykres z Observium API
+- **Wyświetlanie wykresu**: Wykres multi-port traffic wyświetlany na środku strony
+- **Obsługa błędów**: Komunikaty o błędach wyświetlane w czerwonej stopce
+- **Responsywność**: Interfejs dostosowuje się do rozmiaru ekranu
 
 ## Walidacja kodu
 

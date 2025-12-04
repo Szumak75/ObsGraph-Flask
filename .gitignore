@@ -39,6 +39,7 @@ env/
 htmlcov/
 .tox/
 .hypothesis/
+etc/obsgraph.conf
 
 # Logs
 *.log
