@@ -10,7 +10,7 @@ from datetime import datetime
 from inspect import currentframe
 from logging import ERROR
 import os
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple
 
 from flask import Flask, render_template, request
 
@@ -39,7 +39,9 @@ class ObsGraphApp(BData):
     def __init__(self) -> None:
         """Initialize the application with the given config file."""
         current_dir: str = os.path.dirname(os.path.abspath(__file__))
-        config_file_path: str = os.path.join(f"{current_dir}/etc/", ObsKeys.CONF_FILE)
+        config_file_path: str = os.path.join(
+            f"{current_dir}/../etc/", ObsKeys.CONF_FILE
+        )
 
         # Set up error message list
         self._set_data(
@@ -64,6 +66,10 @@ class ObsGraphApp(BData):
         """Load configuration from the config file."""
         conf: Config = self.__config
 
+        if conf.load() is False:
+            self.error_messages.append("Failed to load configuration file.")
+            return
+
         # Validate required configuration keys
         required_keys: List[str] = [
             ObsKeys.CONF_SALT,
@@ -78,6 +84,51 @@ class ObsGraphApp(BData):
             ):
                 error_message: str = f"Missing required configuration key: {key}"
                 self.error_messages.append(error_message)
+
+    def get_observium_charts(self, year: int, month: int) -> Optional[Any]:
+        """Get Observium charts for the given year and month.
+        ### Args:
+        year (int): The year.
+        month (int): The month.
+        ### Returns:
+        Optional[tuple]: A tuple containing chart data, or None if error.
+        """
+        # curl template:
+        # curl -u {self.conf_api_login}:{self.conf_api_password} "{self.conf_observium_url}/graph.php?type=multi-port_bits&id=496,508&from={self.__get_month_timestamp_range(year, month)[0]}&to={self.__get_month_timestamp_range(year, month)[1]}&height=748&width=1024"
+        # Placeholder implementation
+
+        return None
+
+    def __get_month_timestamp_range(self, year: int, month: int) -> Tuple[int, int]:
+        """Get the start and end timestamps for a given month and year.
+
+        ### Args:
+        year (int): The year.
+        month (int): The month.
+
+        ### Returns:
+        Optional[tuple]: A tuple containing start and end timestamps, or None if invalid.
+        """
+        # 1. Calculate the Unix timestamp for the start of the month (00:00:00 on the 1st)
+        start_dt = datetime(year, month, 1, 0, 0, 0)
+        start_ts = int(start_dt.timestamp())
+
+        # 2. Determine the next month and year
+        if month == 12:
+            next_month = 1
+            next_year = year + 1
+        else:
+            next_month = month + 1
+            next_year = year
+
+        # 3. Calculate the Unix timestamp for the start of the next month
+        next_start_dt = datetime(next_year, next_month, 1, 0, 0, 0)
+
+        # 4. The end of the selected month (23:59:59 on the last day) is 1 second before
+        # the start of the next month
+        end_ts = int(next_start_dt.timestamp()) - 1
+
+        return (start_ts, end_ts)
 
     @property
     def __config(self) -> Config:
@@ -186,9 +237,15 @@ def index() -> str:
 
     # Errors
     error_messages: List[str] = []
-    if obs_app.has_errors:
-        error_messages.append(obs_app.error_messages.pop())
+    while obs_app.error_messages:
+        line: str = obs_app.error_messages.pop()
+        error_messages.append(line)
 
+    # # Test get_month_timestamp_range
+    # start_ts, end_ts = obs_app.get_month_timestamp_range(selected_year, selected_month)
+    # print(f"Selected month {selected_date} has timestamps: {start_ts} - {end_ts}")
+
+    # Render template with data
     return render_template(
         "index.html",
         years=years,
