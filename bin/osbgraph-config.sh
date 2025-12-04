@@ -19,7 +19,7 @@ else
 fi
 
 # Run the ObsGraph configurator script
-python "$OBSGRAPH_PROJECT_ROOT/obsgraph_flask/tools/obsgraph_configurator.py"
+python "$OBSGRAPH_PROJECT_ROOT/obsgraph_flask/tools/obsgraph_configurator.py" "$@"
 
 deactivate
 # #[EOF]#######################################################################
