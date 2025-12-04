@@ -9,9 +9,8 @@ License: MIT
 import base64
 from datetime import datetime
 from inspect import currentframe
-from logging import ERROR
 import os
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import requests
 from flask import Flask, render_template, request
