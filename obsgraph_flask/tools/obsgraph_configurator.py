@@ -15,13 +15,7 @@ from pathlib import Path
 import sys
 from typing import Optional
 
-from jsktoolbox.configtool import (
-    Config,
-    DataProcessor,
-    FileProcessor,
-    SectionModel,
-    VariableModel,
-)
+from jsktoolbox.configtool import Config
 from jsktoolbox.basetool import BData
 from jsktoolbox.raisetool import Raise
 from jsktoolbox.attribtool import ReadOnlyClass
