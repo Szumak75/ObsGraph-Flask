@@ -4,7 +4,8 @@ keys.py
 Author : Jacek 'Szumak' Kotlarski --<szumak@virthost.pl>
 Created: 3.12.2025, 08:55:04
 
-Purpose:
+Purpose: ObsGraph Flask application keys
+License: MIT
 """
 
 from jsktoolbox.attribtool import ReadOnlyClass
