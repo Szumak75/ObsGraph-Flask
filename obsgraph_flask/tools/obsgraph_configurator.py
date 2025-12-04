@@ -30,7 +30,7 @@ from jsktoolbox.stringtool import SimpleCrypto
 
 # Add project root to Python path
 project_root: Path = Path(__file__).parent.parent
-print(project_root)
+
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
@@ -63,6 +63,7 @@ class ObsGraphConfigurator(BData):
         config_file_path: str = os.path.join(
             f"{current_dir}/../../etc/", ObsKeys.CONF_FILE
         )
+        print(f"Using configuration file: {config_file_path}")
 
         # Set up configuration
         self._set_data(
@@ -93,6 +94,7 @@ class ObsGraphConfigurator(BData):
         cli: CommandLineParser = self.__cli
         conf: Config = self.__config
         salt = 0
+        update = False
 
         # try to load existing configuration
         if not conf.load():
@@ -133,9 +135,33 @@ class ObsGraphConfigurator(BData):
                     varname=ObsKeys.CONF_OBSERVIUM_API_URL,
                     value=url_value,
                 )
+                update = True
+        if cli.has_option(_Keys.LONG_LOGIN):
+            login_value: Optional[str] = cli.get_option(_Keys.LONG_LOGIN)
+            if login_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_API_LOGIN,
+                    value=login_value,
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_PASSWORD):
+            password_value: Optional[str] = cli.get_option(_Keys.LONG_PASSWORD)
+            if password_value is not None:
+                encrypted_password: str = SimpleCrypto.multiple_encrypt(
+                    salt, password_value
+                )
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_API_PASSWORD,
+                    value=encrypted_password,
+                )
+                update = True
 
-        # Save updated configuration
-        # conf.save()
+        # Save updated configuration if any changes were made
+        if update:
+            print("Updating configuration file...")
+            conf.save()
 
     def __cli_configure(self) -> None:
         """Configure command line parser."""
@@ -243,7 +269,7 @@ class ObsGraphConfigurator(BData):
 
 if __name__ == "__main__":
     print("ObsGraph Configurator")
-    print("======================\n")
+    print("=====================")
     configurator = ObsGraphConfigurator()
     configurator.run()
 
