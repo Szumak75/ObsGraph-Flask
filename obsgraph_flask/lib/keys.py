@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-keys.py
-Author : Jacek 'Szumak' Kotlarski --<szumak@virthost.pl>
-Created: 3.12.2025, 08:55:04
+Author:  Jacek Kotlarski --<jacek.kotlarski@bioseco.com>
+Created: 2025-12-03
 
-Purpose: ObsGraph Flask application keys
+Purpose: Configuration keys and constants for ObsGraph Flask application.
+
+This module defines ReadOnlyClass-based constants used for configuration
+management throughout the application. Keys are immutable once defined.
+
 License: MIT
 """
 
@@ -12,8 +15,11 @@ from jsktoolbox.attribtool import ReadOnlyClass
 
 
 class ObsKeys(object, metaclass=ReadOnlyClass):
-    """
-    ObsGraph Flask application keys
+    """Read-only configuration keys for ObsGraph Flask application.
+
+    This class uses ReadOnlyClass metaclass to ensure that all key values
+    are immutable after class definition. Keys are used to access configuration
+    values from the Config object and maintain consistency across the application.
     """
 
     CONF_MAIN_SECTION_NAME: str = "ObsGraphFlaskApp"

@@ -2,7 +2,12 @@
 Author:  Jacek Kotlarski --<jacek.kotlarski@bioseco.com>
 Created: 2025-10-15
 
-Purpose: Main Flask application for ObsGraph.
+Purpose: Main Flask application for ObsGraph network monitoring visualization.
+
+This module provides a Flask-based web application that fetches and displays
+network traffic graphs from Observium API. It includes configuration management,
+error handling, and a responsive user interface for date-based chart selection.
+
 License: MIT
 """
 
@@ -15,7 +20,7 @@ from typing import List, Optional, Tuple
 import requests
 from flask import Flask, render_template, request
 
-from lib.keys import ObsKeys
+from obsgraph_flask.lib.keys import ObsKeys
 
 from jsktoolbox.configtool import Config
 from jsktoolbox.stringtool import SimpleCrypto
@@ -28,17 +33,36 @@ from jsktoolbox.attribtool import ReadOnlyClass
 
 
 class _AppKeys(object, metaclass=ReadOnlyClass):
-    """Application keys for ObsGraph Flask app."""
+    """Internal keys for ObsGraphApp BData storage.
+
+    This class defines the keys used for storing configuration and error messages
+    in the ObsGraphApp instance using BData's key-value storage mechanism.
+    """
 
     CONFIG: str = "__config__"
     ERROR_MESSAGE: str = "__error_message__"
 
 
 class ObsGraphApp(BData):
-    """Main application class for ObsGraph Flask app."""
+    """Main application class for ObsGraph Flask application.
+
+    This class manages the application configuration, communicates with Observium API
+    to fetch network traffic graphs, and handles error messages. It inherits from
+    BData to utilize type-safe data storage for configuration and error management.
+
+    The application loads configuration from etc/obsgraph.conf and validates required
+    parameters including API credentials, URL, and port IDs.
+    """
 
     def __init__(self) -> None:
-        """Initialize the application with the given config file."""
+        """Initialize the application with configuration file.
+
+        Sets up BData storage for configuration and error messages, locates the
+        configuration file in etc/ directory, and loads application settings.
+
+        ### Raises:
+        * RuntimeError: If configuration initialization fails.
+        """
         current_dir: str = os.path.dirname(os.path.abspath(__file__))
         config_file_path: str = os.path.join(
             f"{current_dir}/../etc/", ObsKeys.CONF_FILE
@@ -64,7 +88,15 @@ class ObsGraphApp(BData):
         self._load_config()
 
     def _load_config(self) -> None:
-        """Load configuration from the config file."""
+        """Load and validate configuration from the config file.
+
+        Attempts to load the configuration file and validates the presence of all
+        required configuration keys. If any required key is missing, an error
+        message is added to the error_messages list.
+
+        ### Returns:
+        None - Errors are stored in error_messages property.
+        """
         conf: Config = self.__config
 
         if conf.load() is False:
@@ -88,18 +120,35 @@ class ObsGraphApp(BData):
                 self.error_messages.append(error_message)
 
     def get_observium_charts(self, year: int, month: int) -> Optional[str]:
-        """Get Observium charts for the given year and month.
+        """Fetch Observium network traffic chart for the specified month.
+
+        Constructs an API request to Observium for multi-port traffic graphs,
+        retrieves the image data, and encodes it as base64 data URI for HTML embedding.
+        Handles authentication, timeout, and various error conditions.
 
         ### Arguments:
-        * year: int - The year for which to retrieve the chart.
-        * month: int - The month for which to retrieve the chart.
+        * year: int - The year for which to retrieve the chart (e.g., 2025).
+        * month: int - The month for which to retrieve the chart (1-12).
 
         ### Returns:
-        Optional[str] - Base64 encoded image data for embedding in HTML, or None if error occurs.
+        Optional[str] - Base64 encoded data URI (data:image/png;base64,...) for HTML <img> tag,
+                       or None if configuration errors exist or request fails.
+
+        ### Raises:
+        Does not raise exceptions; errors are added to error_messages list.
 
         ### Examples:
-        curl template:
-        curl -u {self.conf_api_login}:{self.conf_api_password} "{self.conf_observium_url}/graph.php?type=multi-port_bits&id=496,508&from={self.__get_month_timestamp_range(year, month)[0]}&to={self.__get_month_timestamp_range(year, month)[1]}&height=748&width=1024"
+        ```python
+        chart = obs_app.get_observium_charts(2025, 11)
+        if chart:
+            # Use in HTML: <img src="{chart}">
+            pass
+        ```
+
+        Equivalent curl command:
+        ```bash
+        curl -u api_user:api_pass "https://observium.example.com/graph.php?type=multi-port_bits&id=496,508&from=1698796800&to=1701388799&height=600&width=1024"
+        ```
         """
         # Check if configuration is available
         if self.has_errors:
@@ -166,14 +215,24 @@ class ObsGraphApp(BData):
             return None
 
     def __get_month_timestamp_range(self, year: int, month: int) -> Tuple[int, int]:
-        """Get the start and end timestamps for a given month and year.
+        """Calculate Unix timestamp range for the specified month.
 
-        ### Args:
-        year (int): The year.
-        month (int): The month.
+        Computes the start timestamp (00:00:00 on the 1st) and end timestamp
+        (23:59:59 on the last day) for the given month and year.
+
+        ### Arguments:
+        * year: int - The year (e.g., 2025).
+        * month: int - The month (1-12).
 
         ### Returns:
-        Optional[tuple]: A tuple containing start and end timestamps, or None if invalid.
+        Tuple[int, int] - A tuple of (start_timestamp, end_timestamp) in Unix epoch seconds.
+
+        ### Examples:
+        ```python
+        start, end = self.__get_month_timestamp_range(2025, 11)
+        # start: 1730419200 (2025-11-01 00:00:00)
+        # end: 1733011199 (2025-11-30 23:59:59)
+        ```
         """
         # 1. Calculate the Unix timestamp for the start of the month (00:00:00 on the 1st)
         start_dt = datetime(year, month, 1, 0, 0, 0)
@@ -198,7 +257,14 @@ class ObsGraphApp(BData):
 
     @property
     def __config(self) -> Config:
-        """Get the configuration object."""
+        """Get the configuration object from BData storage.
+
+        ### Returns:
+        Config - The JskToolBox Config instance containing application settings.
+
+        ### Raises:
+        * RuntimeError: If configuration object is not initialized in BData storage.
+        """
         config: Optional[Config] = self._get_data(_AppKeys.CONFIG)
         if config is None:
             raise Raise.error(
@@ -211,7 +277,17 @@ class ObsGraphApp(BData):
 
     @property
     def error_messages(self) -> List[str]:
-        """Get the list of error messages."""
+        """Get the mutable list of error messages.
+
+        This property provides direct access to the error messages list stored
+        in BData. Errors can be added using list.append() or removed using list.pop().
+
+        ### Returns:
+        List[str] - Mutable list of error message strings.
+
+        ### Raises:
+        * RuntimeError: If error messages list is not initialized in BData storage.
+        """
         errors = self._get_data(_AppKeys.ERROR_MESSAGE)
         if errors is None:
             raise Raise.error(
@@ -224,12 +300,20 @@ class ObsGraphApp(BData):
 
     @property
     def has_errors(self) -> bool:
-        """Check if there are any error messages."""
+        """Check if any error messages are present.
+
+        ### Returns:
+        bool - True if error_messages list contains one or more errors, False otherwise.
+        """
         return len(self.error_messages) > 0
 
     @property
     def conf_salt(self) -> int:
-        """Get the application salt from configuration."""
+        """Get the salt value used for password encryption/decryption.
+
+        ### Returns:
+        int - Salt value for SimpleCrypto operations, or -1 if not found in configuration.
+        """
         value = self.__config.get(
             section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_SALT
         )
@@ -240,7 +324,11 @@ class ObsGraphApp(BData):
 
     @property
     def conf_observium_url(self) -> str:
-        """Get the Observium API URL from configuration."""
+        """Get the base URL of the Observium instance.
+
+        ### Returns:
+        str - Base URL (e.g., 'https://observium.example.com/'), or empty string if not found.
+        """
         value = self.__config.get(
             section=ObsKeys.CONF_MAIN_SECTION_NAME,
             varname=ObsKeys.CONF_OBSERVIUM_API_URL,
@@ -252,7 +340,11 @@ class ObsGraphApp(BData):
 
     @property
     def conf_api_login(self) -> str:
-        """Get the API login from configuration."""
+        """Get the Observium API username.
+
+        ### Returns:
+        str - API username for HTTP Basic authentication, or empty string if not found.
+        """
         value = self.__config.get(
             section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_API_LOGIN
         )
@@ -263,7 +355,14 @@ class ObsGraphApp(BData):
 
     @property
     def conf_api_password(self) -> str:
-        """Get the API password from configuration."""
+        """Get the decrypted Observium API password.
+
+        Retrieves the encrypted password from configuration and decrypts it
+        using SimpleCrypto with the configured salt value.
+
+        ### Returns:
+        str - Decrypted API password for HTTP Basic authentication, or empty string if not found.
+        """
         value = self.__config.get(
             section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_API_PASSWORD
         )
@@ -274,10 +373,13 @@ class ObsGraphApp(BData):
 
     @property
     def conf_port_ids(self) -> str:
-        """Get the port IDs from configuration.
+        """Get the comma-separated port IDs for multi-port graphs.
+
+        These IDs are used in the Observium API request to specify which network
+        ports should be included in the traffic graph.
 
         ### Returns:
-        str - Comma-separated port IDs for the Observium API request.
+        str - Comma-separated port IDs (e.g., '496,508'), or empty string if not found.
         """
         value = self.__config.get(
             section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_IDS
@@ -295,10 +397,14 @@ obs_app: ObsGraphApp = ObsGraphApp()
 
 @app.route("/", methods=["GET", "POST"])
 def index() -> str:
-    """Main page with year and month selection.
+    """Render the main page with date selection and Observium chart display.
+
+    Handles both GET (initial page load) and POST (form submission) requests.
+    On GET, displays current month's chart. On POST, displays chart for selected
+    year and month. Collects and displays any errors in the page footer.
 
     ### Returns:
-    str - Rendered HTML template with date selection form.
+    str - Rendered HTML template with form controls, chart image, and error messages.
     """
     current_year: int = datetime.now().year
     current_month: int = datetime.now().month

@@ -1,8 +1,12 @@
 """
-Author:  Jacek Kotlarski <jacek.kotlarski@bioseco.com>
+Author:  Jacek Kotlarski --<jacek.kotlarski@bioseco.com>
 Created: 2025-10-15
 
-Purpose: Tests for the main Flask application.
+Purpose: Unit tests for the main Flask application routes and functionality.
+
+This module contains pytest-based tests for the Flask application's HTTP routes,
+response validation, and configuration. Tests use Flask's test client to simulate
+HTTP requests without running a real server.
 """
 
 from datetime import datetime
@@ -17,10 +21,13 @@ from obsgraph_flask.app import app
 
 @pytest.fixture
 def client() -> FlaskClient:
-    """Create test client for Flask app.
+    """Create and configure Flask test client.
+
+    Configures the Flask application in testing mode and returns a test client
+    that can be used to simulate HTTP requests to the application.
 
     ### Returns:
-    FlaskClient - Test client for making requests to the app.
+    FlaskClient - Test client for making HTTP requests to the app without running a server.
     """
     app.config["TESTING"] = True
     with app.test_client() as client:
@@ -28,7 +35,11 @@ def client() -> FlaskClient:
 
 
 class TestIndexRoute:
-    """Tests for the main index route."""
+    """Test suite for the main index route (/) functionality.
+
+    Tests cover both GET and POST request handling, default value behavior,
+    date formatting, and response validation for the main application route.
+    """
 
     def test_index_get_returns_200(self, client: FlaskClient) -> None:
         """Test that GET request to index returns 200 status code.
@@ -102,7 +113,11 @@ class TestIndexRoute:
 
 
 class TestAppConfiguration:
-    """Tests for Flask app configuration."""
+    """Test suite for Flask application configuration and initialization.
+
+    Tests verify that the Flask application instance is properly initialized
+    and has the correct configuration properties.
+    """
 
     def test_app_exists(self) -> None:
         """Test that Flask app instance exists."""

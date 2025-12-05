@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 obsgraph_configurator.py
-Author : Jacek 'Szumak' Kotlarski --<szumak@virthost.pl>
+Author : Jacek Kotlarski --<jacek.kotlarski@bioseco.com>
 Created: 17.10.2025, 12:30:19
 
 Purpose: ObsGraph configuration tool

@@ -1,8 +1,12 @@
 """
-Author:  Jacek Kotlarski <jacek.kotlarski@bioseco.com>
+Author:  Jacek Kotlarski --<jacek.kotlarski@bioseco.com>
 Created: 2025-10-15
 
-Purpose: Basic test to verify pytest installation and configuration.
+Purpose: Basic sanity tests to verify pytest installation and configuration.
+
+This module contains simple tests to ensure the testing infrastructure is
+properly set up and functional. These tests should always pass and serve as
+a baseline for more complex test cases.
 """
 
 
