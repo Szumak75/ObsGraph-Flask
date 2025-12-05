@@ -22,6 +22,10 @@ api_password = "encrypted_api_password"
 
 # ID portów do wykresów (rozdzielone przecinkami)
 port_ids = "496,508"
+
+# Wymiary wykresów w pikselach
+graph_width = 1024
+graph_height = 600
 ```
 
 ### Parametry
