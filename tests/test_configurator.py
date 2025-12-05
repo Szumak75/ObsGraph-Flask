@@ -29,11 +29,11 @@ from obsgraph_flask.lib.keys import ObsKeys
 @pytest.fixture
 def temp_config_file():
     """Create a temporary config file for testing.
-    
+
     ### Returns:
     Generator yielding path to temporary configuration file
     """
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.conf', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:
         config_path: str = f.name
     yield config_path
     # Cleanup
@@ -44,46 +44,43 @@ def temp_config_file():
 @pytest.fixture
 def temp_config_with_salt(temp_config_file: str):
     """Create a temporary config file with salt for testing.
-    
+
     ### Arguments:
     * temp_config_file: str - Path to temporary config file
-    
+
     ### Returns:
     Generator yielding path to configured temporary file
     """
     config: Config = Config(
-        filename=temp_config_file,
-        main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+        filename=temp_config_file, main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
     )
-    
+
     salt: int = SimpleCrypto.salt_generator(16)
     config.set(
-        section=ObsKeys.CONF_MAIN_SECTION_NAME,
-        varname=ObsKeys.CONF_SALT,
-        value=salt
+        section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_SALT, value=salt
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
         varname=ObsKeys.CONF_OBSERVIUM_API_URL,
-        value="http://test.local/"
+        value="http://test.local/",
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
         varname=ObsKeys.CONF_API_LOGIN,
-        value="test_user"
+        value="test_user",
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
         varname=ObsKeys.CONF_API_PASSWORD,
-        value=SimpleCrypto.multiple_encrypt(salt, "test_password")
+        value=SimpleCrypto.multiple_encrypt(salt, "test_password"),
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
         varname=ObsKeys.CONF_PORT_IDS,
-        value="496,508"
+        value="496,508",
     )
     config.save()
-    
+
     return temp_config_file
 
 
@@ -94,13 +91,15 @@ class TestObsGraphConfiguratorInit:
         """Test that __init__ creates default config file if it does not exist."""
         import tempfile
         import shutil
-        
+
         # Create temp directory
         temp_dir: str = tempfile.mkdtemp()
         temp_path: str = os.path.join(temp_dir, "test_config.conf")
-        
+
         try:
-            with patch("obsgraph_flask.tools.obsgraph_configurator.SimpleCrypto.salt_generator") as mock_salt:
+            with patch(
+                "obsgraph_flask.tools.obsgraph_configurator.SimpleCrypto.salt_generator"
+            ) as mock_salt:
                 with patch("os.path.join") as mock_join:
                     with patch("os.path.dirname") as mock_dirname:
                         with patch("os.path.abspath") as mock_abspath:
@@ -113,16 +112,19 @@ class TestObsGraphConfiguratorInit:
 
                             # Verify config file was created
                             assert os.path.exists(temp_path)
-                            
+
                             # Read file contents to verify structure
-                            with open(temp_path, 'r') as f:
+                            with open(temp_path, "r") as f:
                                 content: str = f.read()
-                            
+
                             # Verify key content is present
                             assert "[ObsGraphFlaskApp]" in content
                             assert "salt" in content
                             assert "12345" in content
-                            assert "observium_url" in content or "observium_api_url" in content
+                            assert (
+                                "observium_url" in content
+                                or "observium_api_url" in content
+                            )
         finally:
             # Cleanup
             shutil.rmtree(temp_dir, ignore_errors=True)
@@ -137,12 +139,12 @@ class TestObsGraphConfiguratorRun:
     @patch("os.path.dirname")
     @patch("os.path.abspath")
     def test_run_exits_on_help_option(
-        self, 
+        self,
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
         mock_exit: MagicMock,
-        temp_config_with_salt: str
+        temp_config_with_salt: str,
     ) -> None:
         """Test that run() exits when help option is provided."""
         mock_abspath.return_value = "/fake/path"
@@ -163,7 +165,7 @@ class TestObsGraphConfiguratorRun:
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
-        temp_config_with_salt: str
+        temp_config_with_salt: str,
     ) -> None:
         """Test that run() updates URL when CLI option is provided."""
         mock_abspath.return_value = "/fake/path"
@@ -176,10 +178,13 @@ class TestObsGraphConfiguratorRun:
         # Verify config was updated
         config: Config = Config(
             filename=temp_config_with_salt,
-            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
         )
         assert config.load()
-        assert config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_OBSERVIUM_API_URL) == "http://new.local/"
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_OBSERVIUM_API_URL)
+            == "http://new.local/"
+        )
 
     @patch("sys.argv", ["obsgraph_configurator.py", "--login", "new_user"])
     @patch("os.path.join")
@@ -190,7 +195,7 @@ class TestObsGraphConfiguratorRun:
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
-        temp_config_with_salt: str
+        temp_config_with_salt: str,
     ) -> None:
         """Test that run() updates login when CLI option is provided."""
         mock_abspath.return_value = "/fake/path"
@@ -203,10 +208,13 @@ class TestObsGraphConfiguratorRun:
         # Verify config was updated
         config: Config = Config(
             filename=temp_config_with_salt,
-            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
         )
         assert config.load()
-        assert config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_API_LOGIN) == "new_user"
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_API_LOGIN)
+            == "new_user"
+        )
 
     @patch("sys.argv", ["obsgraph_configurator.py", "--password", "new_password"])
     @patch("os.path.join")
@@ -217,7 +225,7 @@ class TestObsGraphConfiguratorRun:
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
-        temp_config_with_salt: str
+        temp_config_with_salt: str,
     ) -> None:
         """Test that run() encrypts and updates password when CLI option is provided."""
         mock_abspath.return_value = "/fake/path"
@@ -225,28 +233,30 @@ class TestObsGraphConfiguratorRun:
         mock_join.return_value = temp_config_with_salt
 
         configurator: ObsGraphConfigurator = ObsGraphConfigurator()
-        
+
         # Get salt for verification
         config_pre: Config = Config(
             filename=temp_config_with_salt,
-            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
         )
         assert config_pre.load()
         salt: int = config_pre.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_SALT)
-        
+
         configurator.run()
 
         # Verify config was updated with encrypted password
         config: Config = Config(
             filename=temp_config_with_salt,
-            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
         )
         assert config.load()
-        encrypted_password: str = config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_API_PASSWORD)
-        
+        encrypted_password: str = config.get(
+            ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_API_PASSWORD
+        )
+
         # Verify it's encrypted (should be different from plain text)
         assert encrypted_password != "new_password"
-        
+
         # Verify it can be decrypted back
         decrypted: str = SimpleCrypto.multiple_decrypt(salt, encrypted_password)
         assert decrypted == "new_password"
@@ -260,7 +270,7 @@ class TestObsGraphConfiguratorRun:
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
-        temp_config_with_salt: str
+        temp_config_with_salt: str,
     ) -> None:
         """Test that run() updates port IDs when CLI option is provided."""
         mock_abspath.return_value = "/fake/path"
@@ -273,10 +283,13 @@ class TestObsGraphConfiguratorRun:
         # Verify config was updated
         config: Config = Config(
             filename=temp_config_with_salt,
-            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
         )
         assert config.load()
-        assert config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_IDS) == "123,456,789"
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_IDS)
+            == "123,456,789"
+        )
 
 
 class TestKeysClass:
