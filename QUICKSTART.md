@@ -34,9 +34,21 @@ port_ids = "496,508"
 
 ## Uruchomienie aplikacji
 
-### Opcja 1: Bezpośrednio przez Poetry
+### Opcja 1: Development mode
 ```bash
 poetry run python obsgraph_flask/app.py
+```
+
+### Opcja 2: Production mode (Gunicorn)
+```bash
+# Podstawowe uruchomienie
+poetry run gunicorn "obsgraph_flask.app:app"
+
+# Z plikiem konfiguracyjnym
+poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.app:app"
+
+# Niestandardowa konfiguracja
+poetry run gunicorn --workers 4 --bind 0.0.0.0:8000 --timeout 60 "obsgraph_flask.app:app"
 ```
 
 ### Opcja 2: Przez aktywowane środowisko wirtualne

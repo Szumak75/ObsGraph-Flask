@@ -76,11 +76,28 @@ graph_height = 600
 
 ### 3. Run the Application
 
+#### Development Mode
+
 ```bash
 poetry run python obsgraph_flask/app.py
 ```
 
 The application will be available at `http://127.0.0.1:5000/`
+
+#### Production Mode with Gunicorn
+
+```bash
+# Using default configuration
+poetry run gunicorn "obsgraph_flask.app:app"
+
+# Using custom configuration file
+poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.app:app"
+
+# Quick start with custom workers
+poetry run gunicorn --workers 4 --bind 0.0.0.0:8000 "obsgraph_flask.app:app"
+```
+
+The application will be available at `http://0.0.0.0:5000/` (or configured port)
 
 ## Development Toolkit
 
