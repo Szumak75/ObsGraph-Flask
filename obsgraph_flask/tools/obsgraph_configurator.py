@@ -47,6 +47,10 @@ class _Keys(object, metaclass=ReadOnlyClass):
     LONG_HELP: str = "help"
     SHORT_IDS: str = "i"
     LONG_IDS: str = "ids"
+    SHORT_WIDTH: str = "w"
+    LONG_WIDTH: str = "width"
+    SHORT_HEIGHT: str = "g"
+    LONG_HEIGHT: str = "height"
 
 
 class ObsGraphConfigurator(BData):
@@ -162,6 +166,24 @@ class ObsGraphConfigurator(BData):
                     value=ids_value,
                 )
                 update = True
+        if cli.has_option(_Keys.LONG_WIDTH):
+            width_value: Optional[str] = cli.get_option(_Keys.LONG_WIDTH)
+            if width_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_GRAPH_WIDTH,
+                    value=int(width_value),
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_HEIGHT):
+            height_value: Optional[str] = cli.get_option(_Keys.LONG_HEIGHT)
+            if height_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_GRAPH_HEIGHT,
+                    value=int(height_value),
+                )
+                update = True
 
         # Save updated configuration if any changes were made
         if update:
@@ -215,6 +237,24 @@ class ObsGraphConfigurator(BData):
             example_value="496,508",
         )
 
+        # Graph width
+        cli.configure_option(
+            short_arg=_Keys.SHORT_WIDTH,
+            long_arg=_Keys.LONG_WIDTH,
+            desc_arg="Graph width in pixels",
+            has_value=True,
+            example_value="1024",
+        )
+
+        # Graph height
+        cli.configure_option(
+            short_arg=_Keys.SHORT_HEIGHT,
+            long_arg=_Keys.LONG_HEIGHT,
+            desc_arg="Graph height in pixels",
+            has_value=True,
+            example_value="600",
+        )
+
     def __create_config(self) -> None:
         """Create a default configuration file if it does not exist."""
         conf: Config = self.__config
@@ -255,6 +295,18 @@ class ObsGraphConfigurator(BData):
                 varname=ObsKeys.CONF_PORT_IDS,
                 value="",
                 desc="Comma-separated port IDs for multi-port graphs",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_GRAPH_WIDTH,
+                value=1024,
+                desc="Graph width in pixels",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_GRAPH_HEIGHT,
+                value=600,
+                desc="Graph height in pixels",
             )
             conf.save()
 

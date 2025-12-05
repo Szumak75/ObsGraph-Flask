@@ -127,3 +127,25 @@ class TestAppConfiguration:
     def test_app_name(self) -> None:
         """Test that Flask app has correct name."""
         assert app.name == "obsgraph_flask.app"
+
+
+class TestGraphDimensionsConfiguration:
+    """Test suite for graph dimensions configuration."""
+
+    def test_default_graph_width(self) -> None:
+        """Test that default graph width is 1024."""
+        from obsgraph_flask.app import obs_app
+
+        # Should return default value of 1024 if not configured
+        width: int = obs_app.conf_graph_width
+        assert isinstance(width, int)
+        assert width > 0
+
+    def test_default_graph_height(self) -> None:
+        """Test that default graph height is 600."""
+        from obsgraph_flask.app import obs_app
+
+        # Should return default value of 600 if not configured
+        height: int = obs_app.conf_graph_height
+        assert isinstance(height, int)
+        assert height > 0

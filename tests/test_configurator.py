@@ -79,6 +79,16 @@ def temp_config_with_salt(temp_config_file: str):
         varname=ObsKeys.CONF_PORT_IDS,
         value="496,508",
     )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_GRAPH_WIDTH,
+        value=1024,
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_GRAPH_HEIGHT,
+        value=600,
+    )
     config.save()
 
     return temp_config_file
@@ -291,6 +301,64 @@ class TestObsGraphConfiguratorRun:
             == "123,456,789"
         )
 
+    @patch("sys.argv", ["obsgraph_configurator.py", "--width", "1920"])
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_run_updates_graph_width(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_salt: str,
+    ) -> None:
+        """Test that run() updates graph width when CLI option is provided."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_salt
+
+        configurator: ObsGraphConfigurator = ObsGraphConfigurator()
+        configurator.run()
+
+        # Verify config was updated
+        config: Config = Config(
+            filename=temp_config_with_salt,
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+        )
+        assert config.load()
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_GRAPH_WIDTH) == 1920
+        )
+
+    @patch("sys.argv", ["obsgraph_configurator.py", "--height", "800"])
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_run_updates_graph_height(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_salt: str,
+    ) -> None:
+        """Test that run() updates graph height when CLI option is provided."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_salt
+
+        configurator: ObsGraphConfigurator = ObsGraphConfigurator()
+        configurator.run()
+
+        # Verify config was updated
+        config: Config = Config(
+            filename=temp_config_with_salt,
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+        )
+        assert config.load()
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_GRAPH_HEIGHT) == 800
+        )
+
 
 class TestKeysClass:
     """Test _Keys configuration constants."""
@@ -311,6 +379,10 @@ class TestKeysClass:
         assert _Keys.LONG_URL == "url"
         assert _Keys.SHORT_LOGIN == "l"
         assert _Keys.LONG_LOGIN == "login"
+        assert _Keys.SHORT_WIDTH == "w"
+        assert _Keys.LONG_WIDTH == "width"
+        assert _Keys.SHORT_HEIGHT == "g"
+        assert _Keys.LONG_HEIGHT == "height"
         assert _Keys.SHORT_PASSWORD == "p"
         assert _Keys.LONG_PASSWORD == "password"
         assert _Keys.SHORT_HELP == "h"

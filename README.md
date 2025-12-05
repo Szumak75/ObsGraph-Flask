@@ -46,7 +46,9 @@ poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
   --url "https://observium.example.com" \
   --login "api_user" \
   --password "api_password" \
-  --ids "496,508"
+  --ids "496,508" \
+  --width 1024 \
+  --height 600
 ```
 
 Or manually edit `etc/obsgraph.conf`:
@@ -58,7 +60,19 @@ observium_url = "https://observium.example.com/"
 api_login = "api_user"
 api_password = "encrypted_password_here"
 port_ids = "496,508"
+graph_width = 1024
+graph_height = 600
 ```
+
+**Configuration Options:**
+
+- `salt` - Application salt for password encryption (auto-generated)
+- `observium_url` - Base URL of Observium API
+- `api_login` - Observium API username
+- `api_password` - Encrypted API password
+- `port_ids` - Comma-separated port IDs for multi-port graphs
+- `graph_width` - Width of generated graphs in pixels (default: 1024)
+- `graph_height` - Height of generated graphs in pixels (default: 600)
 
 ### 3. Run the Application
 

@@ -28,6 +28,8 @@ class ObsKeys(object, metaclass=ReadOnlyClass):
     CONF_API_LOGIN: str = "api_login"
     CONF_API_PASSWORD: str = "api_password"
     CONF_PORT_IDS: str = "port_ids"
+    CONF_GRAPH_WIDTH: str = "graph_width"
+    CONF_GRAPH_HEIGHT: str = "graph_height"
     CONF_FILE: str = "obsgraph.conf"
 
 

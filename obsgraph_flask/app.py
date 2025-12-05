@@ -164,8 +164,8 @@ class ObsGraphApp(BData):
             f"id={self.conf_port_ids}&"
             f"from={start_ts}&"
             f"to={end_ts}&"
-            f"height=600&"
-            f"width=1024"
+            f"height={self.conf_graph_height}&"
+            f"width={self.conf_graph_width}"
         )
 
         try:
@@ -388,6 +388,34 @@ class ObsGraphApp(BData):
             self.error_messages.append("Port IDs not found in configuration.")
             return ""
         return value
+
+    @property
+    def conf_graph_width(self) -> int:
+        """Get graph width from configuration.
+
+        ### Returns:
+        int - Width of the graph in pixels (default: 1024).
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_GRAPH_WIDTH
+        )
+        if value is None:
+            return 1024
+        return int(value)
+
+    @property
+    def conf_graph_height(self) -> int:
+        """Get graph height from configuration.
+
+        ### Returns:
+        int - Height of the graph in pixels (default: 600).
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_GRAPH_HEIGHT
+        )
+        if value is None:
+            return 600
+        return int(value)
 
 
 # Initialize Flask application
