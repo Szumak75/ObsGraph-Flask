@@ -39,7 +39,6 @@ env/
 htmlcov/
 .tox/
 .hypothesis/
-etc/obsgraph.conf
 
 # Logs
 *.log
@@ -54,3 +53,6 @@ poetry.lock
 # Project specific
 *.tmp
 *.bak
+
+# Configuration files with sensitive data
+etc/obsgraph.conf

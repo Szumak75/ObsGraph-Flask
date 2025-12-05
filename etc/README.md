@@ -1,6 +1,6 @@
 # ObsGraph-Flask Configuration
 
-## Configuration File: `./etc/obsgraph.conf`
+## Configuration File: `obsgraph.conf`
 
 Konfiguracja aplikacji przechowywana w formacie INI.
 
