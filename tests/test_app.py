@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+from unittest.mock import patch
 
 from obsgraph_flask.app import app
 
@@ -110,6 +111,25 @@ class TestIndexRoute:
         current_month: int = datetime.now().month
         expected_date: str = f"{current_year:04d}-{current_month:02d}"
         assert expected_date.encode() in response.data
+
+    @patch("obsgraph_flask.app.obs_app.get_observium_charts")
+    def test_index_renders_two_chart_sections_with_headers(
+        self,
+        mock_get_observium_charts: Any,
+        client: FlaskClient,
+    ) -> None:
+        """Test that index renders two chart sections and their headers."""
+        mock_get_observium_charts.return_value = [
+            {"header": "TASK", "image": "data:image/png;base64,ZmFrZQ=="},
+            {"header": "Biuro", "image": "data:image/png;base64,ZmFrZTI="},
+        ]
+
+        response: Any = client.get("/")
+
+        assert response.status_code == 200
+        assert b"TASK" in response.data
+        assert b"Biuro" in response.data
+        assert response.data.count(b"data:image/png;base64,") == 2
 
 
 class TestAppConfiguration:

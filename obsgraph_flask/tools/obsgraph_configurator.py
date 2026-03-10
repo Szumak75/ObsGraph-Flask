@@ -47,6 +47,14 @@ class _Keys(object, metaclass=ReadOnlyClass):
     LONG_HELP: str = "help"
     SHORT_IDS: str = "i"
     LONG_IDS: str = "ids"
+    SHORT_IDS1: str = "1"
+    LONG_IDS1: str = "ids1"
+    SHORT_IDS2: str = "2"
+    LONG_IDS2: str = "ids2"
+    SHORT_HEADER1: str = "a"
+    LONG_HEADER1: str = "header1"
+    SHORT_HEADER2: str = "b"
+    LONG_HEADER2: str = "header2"
     SHORT_WIDTH: str = "w"
     LONG_WIDTH: str = "width"
     SHORT_HEIGHT: str = "g"
@@ -162,8 +170,44 @@ class ObsGraphConfigurator(BData):
             if ids_value is not None:
                 conf.set(
                     section=ObsKeys.CONF_MAIN_SECTION_NAME,
-                    varname=ObsKeys.CONF_PORT_IDS,
+                    varname=ObsKeys.CONF_PORT_IDS1,
                     value=ids_value,
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_IDS1):
+            ids1_value: Optional[str] = cli.get_option(_Keys.LONG_IDS1)
+            if ids1_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_PORT_IDS1,
+                    value=ids1_value,
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_IDS2):
+            ids2_value: Optional[str] = cli.get_option(_Keys.LONG_IDS2)
+            if ids2_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_PORT_IDS2,
+                    value=ids2_value,
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_HEADER1):
+            header1_value: Optional[str] = cli.get_option(_Keys.LONG_HEADER1)
+            if header1_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_PORT_HEADER1,
+                    value=header1_value,
+                )
+                update = True
+        if cli.has_option(_Keys.LONG_HEADER2):
+            header2_value: Optional[str] = cli.get_option(_Keys.LONG_HEADER2)
+            if header2_value is not None:
+                conf.set(
+                    section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                    varname=ObsKeys.CONF_PORT_HEADER2,
+                    value=header2_value,
                 )
                 update = True
         if cli.has_option(_Keys.LONG_WIDTH):
@@ -232,9 +276,37 @@ class ObsGraphConfigurator(BData):
         cli.configure_option(
             short_arg=_Keys.SHORT_IDS,
             long_arg=_Keys.LONG_IDS,
-            desc_arg="Comma-separated port IDs for multi-port graphs",
+            desc_arg="Backward-compatible alias for --ids1",
             has_value=True,
             example_value="496,508",
+        )
+        cli.configure_option(
+            short_arg=_Keys.SHORT_IDS1,
+            long_arg=_Keys.LONG_IDS1,
+            desc_arg="Port IDs for the first graph",
+            has_value=True,
+            example_value="496,508",
+        )
+        cli.configure_option(
+            short_arg=_Keys.SHORT_IDS2,
+            long_arg=_Keys.LONG_IDS2,
+            desc_arg="Port IDs for the second graph",
+            has_value=True,
+            example_value="677",
+        )
+        cli.configure_option(
+            short_arg=_Keys.SHORT_HEADER1,
+            long_arg=_Keys.LONG_HEADER1,
+            desc_arg="Header for the first graph",
+            has_value=True,
+            example_value="TASK",
+        )
+        cli.configure_option(
+            short_arg=_Keys.SHORT_HEADER2,
+            long_arg=_Keys.LONG_HEADER2,
+            desc_arg="Header for the second graph",
+            has_value=True,
+            example_value="Biuro",
         )
 
         # Graph width
@@ -292,9 +364,27 @@ class ObsGraphConfigurator(BData):
             )
             conf.set(
                 section=ObsKeys.CONF_MAIN_SECTION_NAME,
-                varname=ObsKeys.CONF_PORT_IDS,
+                varname=ObsKeys.CONF_PORT_HEADER1,
                 value="",
-                desc="Comma-separated port IDs for multi-port graphs",
+                desc="Header for the first port graph",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_PORT_HEADER2,
+                value="",
+                desc="Header for the second port graph",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_PORT_IDS1,
+                value="",
+                desc="Comma-separated port IDs for the first graph",
+            )
+            conf.set(
+                section=ObsKeys.CONF_MAIN_SECTION_NAME,
+                varname=ObsKeys.CONF_PORT_IDS2,
+                value="",
+                desc="Comma-separated port IDs for the second graph",
             )
             conf.set(
                 section=ObsKeys.CONF_MAIN_SECTION_NAME,

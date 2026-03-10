@@ -10,8 +10,17 @@ Flask test client in test_app.py due to BData's strict type checking requirement
 """
 
 from datetime import datetime
+import os
+import tempfile
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
+from jsktoolbox.configtool import Config
+from jsktoolbox.stringtool import SimpleCrypto
+
+from obsgraph_flask.app import ObsGraphApp
+from obsgraph_flask.lib.keys import ObsKeys
 
 
 def test_timestamp_calculation_january() -> None:
@@ -136,3 +145,144 @@ def test_single_digit_month_formatting() -> None:
 
     assert formatted == "2025-05"
     assert formatted[5] == "0"  # First digit of month is zero
+
+
+@pytest.fixture
+def temp_config_with_dual_ports() -> str:
+    """Create a temporary configuration file for dual-port graph tests.
+
+    ### Returns:
+    str - Path to temporary configuration file.
+    """
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as file:
+        config_path: str = file.name
+
+    config: Config = Config(
+        filename=config_path,
+        main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+    )
+    salt: int = SimpleCrypto.salt_generator(16)
+
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_SALT,
+        value=salt,
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_OBSERVIUM_API_URL,
+        value="https://observium.example.com/",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_API_LOGIN,
+        value="api_user",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_API_PASSWORD,
+        value=SimpleCrypto.multiple_encrypt(salt, "api_password"),
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_HEADER1,
+        value="TASK",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_HEADER2,
+        value="Biuro",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_IDS1,
+        value="496,508",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_IDS2,
+        value="677",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_GRAPH_WIDTH,
+        value=1200,
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_GRAPH_HEIGHT,
+        value=500,
+    )
+    config.save()
+
+    yield config_path
+    os.unlink(config_path)
+
+
+class TestObsGraphDualCharts:
+    """Test suite for dual chart generation based on new configuration keys."""
+
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_load_config_accepts_dual_port_keys(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_dual_ports: str,
+    ) -> None:
+        """Test that configuration validation accepts port_ids1/2 and headers."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_dual_ports
+
+        obs_app: ObsGraphApp = ObsGraphApp()
+
+        assert obs_app.has_errors is False
+        assert obs_app.conf_port_header1 == "TASK"
+        assert obs_app.conf_port_header2 == "Biuro"
+        assert obs_app.conf_port_ids1 == "496,508"
+        assert obs_app.conf_port_ids2 == "677"
+
+    @patch("obsgraph_flask.app.requests.get")
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_get_observium_charts_generates_multi_and_single_port_requests(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        mock_get: MagicMock,
+        temp_config_with_dual_ports: str,
+    ) -> None:
+        """Test that chart type depends on whether IDs contain one or many ports."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_dual_ports
+
+        response: MagicMock = MagicMock()
+        response.status_code = 200
+        response.headers = {"Content-Type": "image/png"}
+        response.content = b"fake-image"
+        mock_get.return_value = response
+
+        obs_app: ObsGraphApp = ObsGraphApp()
+
+        charts: Any = obs_app.get_observium_charts(2025, 10)
+
+        assert isinstance(charts, list)
+        assert len(charts) == 2
+        assert charts[0]["header"] == "TASK"
+        assert charts[1]["header"] == "Biuro"
+        assert "data:image/png;base64," in charts[0]["image"]
+        assert "data:image/png;base64," in charts[1]["image"]
+
+        first_url: str = mock_get.call_args_list[0].args[0]
+        second_url: str = mock_get.call_args_list[1].args[0]
+
+        assert "type=multi-port_bits" in first_url
+        assert "id=496,508" in first_url
+        assert "type=port_bits" in second_url
+        assert "id=677" in second_url

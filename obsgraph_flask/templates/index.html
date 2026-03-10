@@ -72,17 +72,30 @@
         .content {
             display: flex;
             justify-content: center;
-            align-items: center;
             min-height: 100vh;
             padding: 100px 20px 20px 20px;
         }
-        
+
+        .charts-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: min(95vw, 1280px);
+        }
+
         .chart-container {
             background-color: white;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            max-width: 90%;
+            width: 100%;
+        }
+
+        .chart-header {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 16px;
         }
         
         .chart-image {
@@ -187,17 +200,20 @@
     </form>
     
     <div class="content">
-        {% if chart_image %}
-        <div class="chart-container">
-            <img src="{{ chart_image }}" alt="Observium Chart for {{ selected_date }}" class="chart-image">
-        </div>
-        {% else %}
-        <div class="chart-container">
-            <div class="no-data">
-                No chart data available for {{ selected_date }}
+        <div class="charts-stack">
+            {% for chart in charts %}
+            <div class="chart-container">
+                <div class="chart-header">{{ chart.header }}</div>
+                {% if chart.image %}
+                <img src="{{ chart.image }}" alt="Observium Chart for {{ chart.header }} {{ selected_date }}" class="chart-image">
+                {% else %}
+                <div class="no-data">
+                    No chart data available for {{ chart.header }} {{ selected_date }}
+                </div>
+                {% endif %}
             </div>
+            {% endfor %}
         </div>
-        {% endif %}
     </div>
     
     {% if errors %}

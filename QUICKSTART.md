@@ -16,7 +16,10 @@ poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
   --url "https://observium.bioseco.com" \
   --login "api" \
   --password "your_password" \
-  --ids "496,508"
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Biuro" \
+  --ids2 "677"
 ```
 
 #### Opcja B: Ręczna edycja pliku konfiguracyjnego
@@ -27,7 +30,10 @@ salt = 5083235041753769
 observium_url = "https://observium.bioseco.com/"
 api_login = "api"
 api_password = "encrypted_password"
-port_ids = "496,508"
+port_header1 = "TASK"
+port_header2 = "Biuro"
+port_ids1 = "496,508"
+port_ids2 = "677"
 ```
 
 **Uwaga**: Hasło musi być zaszyfrowane przy użyciu `SimpleCrypto.multiple_encrypt()` z JskToolBox.
@@ -63,8 +69,8 @@ Aplikacja będzie dostępna pod adresem: http://127.0.0.1:5000/
 
 - **Wybór roku**: Lista rozwijana z bieżącym rokiem i 1 rokiem wstecz
 - **Wybór miesiąca**: Lista rozwijana z miesiącami w formacie cyfrowym (01-12)
-- **Przycisk Submit**: Zatwierdza wybór i pobiera wykres z Observium API
-- **Wyświetlanie wykresu**: Wykres multi-port traffic wyświetlany na środku strony
+- **Przycisk Submit**: Zatwierdza wybór i pobiera wykresy z Observium API
+- **Wyświetlanie wykresów**: Dwa wykresy wyświetlane jeden pod drugim z nagłówkami z konfiguracji
 - **Obsługa błędów**: Komunikaty o błędach wyświetlane w czerwonej stopce
 - **Responsywność**: Interfejs dostosowuje się do rozmiaru ekranu
 
@@ -174,4 +180,3 @@ Projekt wymaga **pełnego typowania** zgodnie z PEP 484 i PEP 526:
 - **Lokalizacja**: katalog `tests/`
 - **Pokrycie**: minimum 80%
 - **Typowanie**: testy też muszą być w pełni typowane
-

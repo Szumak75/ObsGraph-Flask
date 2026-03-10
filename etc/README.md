@@ -20,8 +20,13 @@ api_login = "api_user_name"
 # Zaszyfrowane hasło API (użyj SimpleCrypto.multiple_encrypt)
 api_password = "encrypted_api_password"
 
-# ID portów do wykresów (rozdzielone przecinkami)
-port_ids = "496,508"
+# Nagłówki wykresów
+port_header1 = "TASK"
+port_header2 = "Biuro"
+
+# ID portów do wykresów
+port_ids1 = "496,508"
+port_ids2 = "677"
 
 # Wymiary wykresów w pikselach
 graph_width = 1024
@@ -48,10 +53,16 @@ from jsktoolbox.stringtool import SimpleCrypto
 encrypted = SimpleCrypto.multiple_encrypt(salt_value, "plain_password")
 ```
 
-#### `port_ids` (str, wymagany)
-Lista ID portów rozdzielona przecinkami, dla których będą generowane wykresy multi-port.
+#### `port_header1` / `port_header2` (str, wymagane)
+Nagłówki wyświetlane nad pierwszym i drugim wykresem.
 
-Przykład: `"496,508"` lub `"100,200,300"`
+#### `port_ids1` / `port_ids2` (str, wymagane)
+Lista ID portów dla odpowiedniego wykresu.
+
+- Jeśli wartość zawiera pojedynczy identyfikator, aplikacja generuje wykres `port_bits`.
+- Jeśli wartość zawiera listę rozdzieloną przecinkami, aplikacja generuje wykres `multi-port_bits`.
+
+Przykłady: `"677"` albo `"496,508"`
 
 ### Konfiguracja przy użyciu CLI
 
@@ -62,7 +73,10 @@ Użyj narzędzia `./bin/obsgraph-config.sh`:
   --url "https://observium.example.com" \
   --login "api_user" \
   --password "plain_password" \
-  --ids "496,508"
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Biuro" \
+  --ids2 "677"
 ```
 
 Narzędzie automatycznie:
@@ -77,6 +91,9 @@ Aplikacja sprawdza obecność wszystkich wymaganych kluczy podczas uruchamiania:
 - `observium_url`
 - `api_login`
 - `api_password`
-- `port_ids`
+- `port_header1`
+- `port_header2`
+- `port_ids1`
+- `port_ids2`
 
 Brakujące klucze są zgłaszane jako błędy w interfejsie użytkownika.

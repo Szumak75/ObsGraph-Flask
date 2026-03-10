@@ -15,7 +15,7 @@ import base64
 from datetime import datetime
 from inspect import currentframe
 import os
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import requests
 from flask import Flask, render_template, request
@@ -51,7 +51,7 @@ class ObsGraphApp(BData):
     BData to utilize type-safe data storage for configuration and error management.
 
     The application loads configuration from etc/obsgraph.conf and validates required
-    parameters including API credentials, URL, and port IDs.
+        parameters including API credentials, URL, and port definitions.
     """
 
     def __init__(self) -> None:
@@ -109,7 +109,10 @@ class ObsGraphApp(BData):
             ObsKeys.CONF_OBSERVIUM_API_URL,
             ObsKeys.CONF_API_LOGIN,
             ObsKeys.CONF_API_PASSWORD,
-            ObsKeys.CONF_PORT_IDS,
+            ObsKeys.CONF_PORT_HEADER1,
+            ObsKeys.CONF_PORT_HEADER2,
+            ObsKeys.CONF_PORT_IDS1,
+            ObsKeys.CONF_PORT_IDS2,
         ]
 
         for key in required_keys:
@@ -119,79 +122,139 @@ class ObsGraphApp(BData):
                 error_message: str = f"Missing required configuration key: {key}"
                 self.error_messages.append(error_message)
 
-    def get_observium_charts(self, year: int, month: int) -> Optional[str]:
-        """Fetch Observium network traffic chart for the specified month.
+    def get_observium_charts(self, year: int, month: int) -> List[Dict[str, str]]:
+        """Fetch Observium network traffic charts for the specified month.
 
-        Constructs an API request to Observium for multi-port traffic graphs,
-        retrieves the image data, and encodes it as base64 data URI for HTML embedding.
-        Handles authentication, timeout, and various error conditions.
+        Builds two chart definitions from the configured headers and port ID sets.
+        Each graph uses `multi-port_bits` for comma-separated identifiers and
+        `port_bits` when a single identifier is configured.
 
         ### Arguments:
         * year: int - The year for which to retrieve the chart (e.g., 2025).
         * month: int - The month for which to retrieve the chart (1-12).
 
         ### Returns:
-        Optional[str] - Base64 encoded data URI (data:image/png;base64,...) for HTML <img> tag,
-                       or None if configuration errors exist or request fails.
+        List[Dict[str, str]] - Ordered chart definitions containing `header` and
+        `image` keys. The `image` value is an empty string when the chart
+        could not be fetched.
 
         ### Raises:
         Does not raise exceptions; errors are added to error_messages list.
 
         ### Examples:
         ```python
-        chart = obs_app.get_observium_charts(2025, 11)
-        if chart:
-            # Use in HTML: <img src="{chart}">
-            pass
-        ```
-
-        Equivalent curl command:
-        ```bash
-        curl -u api_user:api_pass "https://observium.example.com/graph.php?type=multi-port_bits&id=496,508&from=1698796800&to=1701388799&height=600&width=1024"
+        charts = obs_app.get_observium_charts(2025, 11)
+        for chart in charts:
+            print(chart["header"], bool(chart["image"]))
         ```
         """
         # Check if configuration is available
         if self.has_errors:
-            return None
+            return []
 
         # Get timestamp range for the month
         start_ts, end_ts = self.__get_month_timestamp_range(year, month)
 
-        # Build the API URL
-        url: str = (
+        charts: List[Dict[str, str]] = []
+        for header, port_ids in self.__get_port_definitions():
+            chart_type: str = self.__get_chart_type(port_ids)
+            url: str = self.__build_chart_url(
+                chart_type=chart_type,
+                port_ids=port_ids,
+                start_ts=start_ts,
+                end_ts=end_ts,
+            )
+            charts.append(
+                {
+                    "header": header,
+                    "image": self.__fetch_chart_image(url),
+                }
+            )
+        return charts
+
+    def __get_port_definitions(self) -> List[Tuple[str, str]]:
+        """Return configured chart headers and port IDs in rendering order.
+
+        ### Returns:
+        List[Tuple[str, str]] - Ordered `(header, port_ids)` pairs.
+        """
+        return [
+            (self.conf_port_header1, self.conf_port_ids1),
+            (self.conf_port_header2, self.conf_port_ids2),
+        ]
+
+    def __get_chart_type(self, port_ids: str) -> str:
+        """Determine the Observium graph type for the configured ports.
+
+        ### Arguments:
+        * port_ids: str - Raw configuration value for one chart.
+
+        ### Returns:
+        str - `port_bits` for a single port or `multi-port_bits` otherwise.
+        """
+        cleaned_ids: List[str] = [item.strip() for item in port_ids.split(",") if item]
+        if len(cleaned_ids) == 1:
+            return "port_bits"
+        return "multi-port_bits"
+
+    def __build_chart_url(
+        self,
+        chart_type: str,
+        port_ids: str,
+        start_ts: int,
+        end_ts: int,
+    ) -> str:
+        """Build the Observium graph URL for one chart definition.
+
+        ### Arguments:
+        * chart_type: str - Observium graph type.
+        * port_ids: str - Port identifier string from configuration.
+        * start_ts: int - Unix start timestamp.
+        * end_ts: int - Unix end timestamp.
+
+        ### Returns:
+        str - Fully qualified Observium graph URL.
+        """
+        return (
             f"{self.conf_observium_url}/graph.php?"
-            f"type=multi-port_bits&"
-            f"id={self.conf_port_ids}&"
+            f"type={chart_type}&"
+            f"id={port_ids}&"
             f"from={start_ts}&"
             f"to={end_ts}&"
             f"height={self.conf_graph_height}&"
             f"width={self.conf_graph_width}"
         )
 
+    def __fetch_chart_image(self, url: str) -> str:
+        """Fetch one chart image and return it as a base64 data URI.
+
+        ### Arguments:
+        * url: str - Fully qualified Observium graph URL.
+
+        ### Returns:
+        str - Base64 data URI or an empty string if fetching failed.
+        """
+
         try:
-            # Make the API request with basic authentication
             response: requests.Response = requests.get(
                 url,
                 auth=(self.conf_api_login, self.conf_api_password),
                 timeout=30,
             )
 
-            # Check if request was successful
             if response.status_code != 200:
                 error_msg: str = f"Failed to fetch chart: HTTP {response.status_code}"
                 self.error_messages.append(error_msg)
-                return None
+                return ""
 
-            # Check if response contains image data
             content_type: str = response.headers.get("Content-Type", "")
             if "image" not in content_type:
                 error_msg = (
                     f"Unexpected content type: {content_type}. " f"Expected image data."
                 )
                 self.error_messages.append(error_msg)
-                return None
+                return ""
 
-            # Encode image to base64 for HTML embedding
             image_base64: str = base64.b64encode(response.content).decode("utf-8")
             return f"data:{content_type};base64,{image_base64}"
 
@@ -199,20 +262,20 @@ class ObsGraphApp(BData):
             self.error_messages.append(
                 "Request timeout: Observium API did not respond in time."
             )
-            return None
+            return ""
         except requests.exceptions.ConnectionError:
             self.error_messages.append(
                 "Connection error: Unable to connect to Observium API."
             )
-            return None
+            return ""
         except requests.exceptions.RequestException as exc:
             self.error_messages.append(f"Request error: {str(exc)}")
-            return None
+            return ""
         except Exception as exc:
             self.error_messages.append(
                 f"Unexpected error while fetching chart: {str(exc)}"
             )
-            return None
+            return ""
 
     def __get_month_timestamp_range(self, year: int, month: int) -> Tuple[int, int]:
         """Calculate Unix timestamp range for the specified month.
@@ -372,20 +435,62 @@ class ObsGraphApp(BData):
         return SimpleCrypto.multiple_decrypt(self.conf_salt, value)
 
     @property
-    def conf_port_ids(self) -> str:
-        """Get the comma-separated port IDs for multi-port graphs.
-
-        These IDs are used in the Observium API request to specify which network
-        ports should be included in the traffic graph.
+    def conf_port_header1(self) -> str:
+        """Get the first chart header from configuration.
 
         ### Returns:
-        str - Comma-separated port IDs (e.g., '496,508'), or empty string if not found.
+        str - Header text for the first chart section.
         """
         value = self.__config.get(
-            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_IDS
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_HEADER1
         )
         if value is None:
-            self.error_messages.append("Port IDs not found in configuration.")
+            self.error_messages.append("Port header 1 not found in configuration.")
+            return ""
+        return value
+
+    @property
+    def conf_port_header2(self) -> str:
+        """Get the second chart header from configuration.
+
+        ### Returns:
+        str - Header text for the second chart section.
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_HEADER2
+        )
+        if value is None:
+            self.error_messages.append("Port header 2 not found in configuration.")
+            return ""
+        return value
+
+    @property
+    def conf_port_ids1(self) -> str:
+        """Get port identifiers for the first chart section.
+
+        ### Returns:
+        str - Comma-separated or single port identifier.
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_IDS1
+        )
+        if value is None:
+            self.error_messages.append("Port IDs 1 not found in configuration.")
+            return ""
+        return value
+
+    @property
+    def conf_port_ids2(self) -> str:
+        """Get port identifiers for the second chart section.
+
+        ### Returns:
+        str - Comma-separated or single port identifier.
+        """
+        value = self.__config.get(
+            section=ObsKeys.CONF_MAIN_SECTION_NAME, varname=ObsKeys.CONF_PORT_IDS2
+        )
+        if value is None:
+            self.error_messages.append("Port IDs 2 not found in configuration.")
             return ""
         return value
 
@@ -451,7 +556,7 @@ def index() -> str:
     selected_date: str = f"{selected_year:04d}-{selected_month:02d}"
 
     # Get chart from Observium API
-    chart_image: Optional[str] = obs_app.get_observium_charts(
+    charts: List[Dict[str, str]] = obs_app.get_observium_charts(
         selected_year, selected_month
     )
 
@@ -469,7 +574,7 @@ def index() -> str:
         selected_year=selected_year,
         selected_month=selected_month,
         selected_date=selected_date,
-        chart_image=chart_image,
+        charts=charts,
         errors=error_messages,
     )
 

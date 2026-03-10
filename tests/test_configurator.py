@@ -76,8 +76,23 @@ def temp_config_with_salt(temp_config_file: str):
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
-        varname=ObsKeys.CONF_PORT_IDS,
+        varname=ObsKeys.CONF_PORT_HEADER1,
+        value="TASK",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_HEADER2,
+        value="Biuro",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_IDS1,
         value="496,508",
+    )
+    config.set(
+        section=ObsKeys.CONF_MAIN_SECTION_NAME,
+        varname=ObsKeys.CONF_PORT_IDS2,
+        value="677",
     )
     config.set(
         section=ObsKeys.CONF_MAIN_SECTION_NAME,
@@ -275,14 +290,14 @@ class TestObsGraphConfiguratorRun:
     @patch("os.path.join")
     @patch("os.path.dirname")
     @patch("os.path.abspath")
-    def test_run_updates_port_ids_option(
+    def test_run_updates_port_ids1_option_with_legacy_alias(
         self,
         mock_abspath: MagicMock,
         mock_dirname: MagicMock,
         mock_join: MagicMock,
         temp_config_with_salt: str,
     ) -> None:
-        """Test that run() updates port IDs when CLI option is provided."""
+        """Test that run() maps legacy --ids to port_ids1."""
         mock_abspath.return_value = "/fake/path"
         mock_dirname.return_value = "/fake"
         mock_join.return_value = temp_config_with_salt
@@ -297,8 +312,94 @@ class TestObsGraphConfiguratorRun:
         )
         assert config.load()
         assert (
-            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_IDS)
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_IDS1)
             == "123,456,789"
+        )
+
+    @patch("sys.argv", ["obsgraph_configurator.py", "--ids2", "987"])
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_run_updates_port_ids2_option(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_salt: str,
+    ) -> None:
+        """Test that run() updates second graph port IDs when CLI option is provided."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_salt
+
+        configurator: ObsGraphConfigurator = ObsGraphConfigurator()
+        configurator.run()
+
+        config: Config = Config(
+            filename=temp_config_with_salt,
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+        )
+        assert config.load()
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_IDS2) == "987"
+        )
+
+    @patch("sys.argv", ["obsgraph_configurator.py", "--header1", "Nowy TASK"])
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_run_updates_port_header1_option(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_salt: str,
+    ) -> None:
+        """Test that run() updates first graph header."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_salt
+
+        configurator: ObsGraphConfigurator = ObsGraphConfigurator()
+        configurator.run()
+
+        config: Config = Config(
+            filename=temp_config_with_salt,
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+        )
+        assert config.load()
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_HEADER1)
+            == "Nowy TASK"
+        )
+
+    @patch("sys.argv", ["obsgraph_configurator.py", "--header2", "Nowe Biuro"])
+    @patch("os.path.join")
+    @patch("os.path.dirname")
+    @patch("os.path.abspath")
+    def test_run_updates_port_header2_option(
+        self,
+        mock_abspath: MagicMock,
+        mock_dirname: MagicMock,
+        mock_join: MagicMock,
+        temp_config_with_salt: str,
+    ) -> None:
+        """Test that run() updates second graph header."""
+        mock_abspath.return_value = "/fake/path"
+        mock_dirname.return_value = "/fake"
+        mock_join.return_value = temp_config_with_salt
+
+        configurator: ObsGraphConfigurator = ObsGraphConfigurator()
+        configurator.run()
+
+        config: Config = Config(
+            filename=temp_config_with_salt,
+            main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
+        )
+        assert config.load()
+        assert (
+            config.get(ObsKeys.CONF_MAIN_SECTION_NAME, ObsKeys.CONF_PORT_HEADER2)
+            == "Nowe Biuro"
         )
 
     @patch("sys.argv", ["obsgraph_configurator.py", "--width", "1920"])
@@ -389,6 +490,10 @@ class TestKeysClass:
         assert _Keys.LONG_HELP == "help"
         assert _Keys.SHORT_IDS == "i"
         assert _Keys.LONG_IDS == "ids"
+        assert _Keys.LONG_IDS1 == "ids1"
+        assert _Keys.LONG_IDS2 == "ids2"
+        assert _Keys.LONG_HEADER1 == "header1"
+        assert _Keys.LONG_HEADER2 == "header2"
 
 
 # #[EOF]#######################################################################

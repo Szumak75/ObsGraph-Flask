@@ -46,7 +46,10 @@ poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
   --url "https://observium.example.com" \
   --login "api_user" \
   --password "api_password" \
-  --ids "496,508" \
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Biuro" \
+  --ids2 "677" \
   --width 1024 \
   --height 600
 ```
@@ -59,7 +62,10 @@ salt = 5083235041753769
 observium_url = "https://observium.example.com/"
 api_login = "api_user"
 api_password = "encrypted_password_here"
-port_ids = "496,508"
+port_header1 = "TASK"
+port_header2 = "Biuro"
+port_ids1 = "496,508"
+port_ids2 = "677"
 graph_width = 1024
 graph_height = 600
 ```
@@ -70,7 +76,10 @@ graph_height = 600
 - `observium_url` - Base URL of Observium API
 - `api_login` - Observium API username
 - `api_password` - Encrypted API password
-- `port_ids` - Comma-separated port IDs for multi-port graphs
+- `port_header1` - Header rendered above the first graph
+- `port_header2` - Header rendered above the second graph
+- `port_ids1` - Port IDs for the first graph; one ID uses `port_bits`, many IDs use `multi-port_bits`
+- `port_ids2` - Port IDs for the second graph; one ID uses `port_bits`, many IDs use `multi-port_bits`
 - `graph_width` - Width of generated graphs in pixels (default: 1024)
 - `graph_height` - Height of generated graphs in pixels (default: 600)
 
@@ -135,7 +144,10 @@ poetry run pycodestyle obsgraph_flask/
 | `observium_url` | str | Yes | Base URL of Observium instance |
 | `api_login` | str | Yes | API username |
 | `api_password` | str | Yes | Encrypted API password |
-| `port_ids` | str | Yes | Comma-separated port IDs for graphs |
+| `port_header1` | str | Yes | Header displayed above the first graph |
+| `port_header2` | str | Yes | Header displayed above the second graph |
+| `port_ids1` | str | Yes | Port IDs for the first graph |
+| `port_ids2` | str | Yes | Port IDs for the second graph |
 
 ## Usage
 
@@ -160,7 +172,7 @@ python obsgraph_flask/app.py
 poetry run python obsgraph_flask/tools/obsgraph_configurator.py --help
 
 # Using shell wrapper
-./bin/osbgraph-config.sh --url "https://observium.example.com" --login "api" --password "secret" --ids "496,508"
+./bin/osbgraph-config.sh --url "https://observium.example.com" --login "api" --password "secret" --header1 "TASK" --ids1 "496,508" --header2 "Biuro" --ids2 "677"
 ```
 
 ### Execute Tests
