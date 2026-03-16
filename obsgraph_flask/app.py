@@ -32,17 +32,6 @@ from jsktoolbox.attribtool import ReadOnlyClass
 # Classes and functions for the Flask application can be defined here.
 
 
-class _AppKeys(object, metaclass=ReadOnlyClass):
-    """Internal keys for ObsGraphApp BData storage.
-
-    This class defines the keys used for storing configuration and error messages
-    in the ObsGraphApp instance using BData's key-value storage mechanism.
-    """
-
-    CONFIG: str = "__config__"
-    ERROR_MESSAGE: str = "__error_message__"
-
-
 class ObsGraphApp(BData):
     """Main application class for ObsGraph Flask application.
 
@@ -53,6 +42,17 @@ class ObsGraphApp(BData):
     The application loads configuration from etc/obsgraph.conf and validates required
         parameters including API credentials, URL, and port definitions.
     """
+
+
+    class __AppKeys(object, metaclass=ReadOnlyClass):
+        """Internal keys for ObsGraphApp BData storage.
+
+        This class defines the keys used for storing configuration and error messages
+        in the ObsGraphApp instance using BData's key-value storage mechanism.
+        """
+
+        CONFIG: str = "__config__"
+        ERROR_MESSAGE: str = "__error_message__"
 
     def __init__(self) -> None:
         """Initialize the application with configuration file.
@@ -70,13 +70,13 @@ class ObsGraphApp(BData):
 
         # Set up error message list
         self._set_data(
-            key=_AppKeys.ERROR_MESSAGE,
+            key=self.__AppKeys.ERROR_MESSAGE,
             value=[],
             set_default_type=List[str],
         )
         # Set up configuration
         self._set_data(
-            key=_AppKeys.CONFIG,
+            key=self.__AppKeys.CONFIG,
             value=Config(
                 filename=config_file_path,
                 main_section_name=ObsKeys.CONF_MAIN_SECTION_NAME,
@@ -328,7 +328,7 @@ class ObsGraphApp(BData):
         ### Raises:
         * RuntimeError: If configuration object is not initialized in BData storage.
         """
-        config: Optional[Config] = self._get_data(_AppKeys.CONFIG)
+        config: Optional[Config] = self._get_data(self.__AppKeys.CONFIG)
         if config is None:
             raise Raise.error(
                 message="Configuration not initialized in ObsGraphApp",
@@ -351,7 +351,7 @@ class ObsGraphApp(BData):
         ### Raises:
         * RuntimeError: If error messages list is not initialized in BData storage.
         """
-        errors = self._get_data(_AppKeys.ERROR_MESSAGE)
+        errors = self._get_data(self.__AppKeys.ERROR_MESSAGE)
         if errors is None:
             raise Raise.error(
                 message="Error messages not initialized in ObsGraphApp",

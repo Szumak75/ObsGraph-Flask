@@ -1,33 +1,75 @@
 # ObsGraph-Flask
 
-ObsGraph-Flask is a Flask-based web application for Observium network monitoring graph visualization and analysis. The application fetches and displays network traffic graphs from Observium API with an intuitive date selection interface. The project embraces strong automation support through a dedicated AI agent configuration (`AGENTS.md`) that mirrors the standards defined in the JskToolBox ecosystem.
+ObsGraph-Flask is a small Flask application that renders monthly traffic charts
+fetched from the Observium graph endpoint. It is designed to run behind
+Gunicorn and an HTTP reverse proxy and to be configured through a dedicated CLI
+tool.
 
-## Features
+## What the application does
 
-- **Interactive Date Selection**: Choose year and month to view network traffic data
-- **Observium API Integration**: Seamlessly fetches multi-port traffic graphs from Observium
-- **Responsive UI**: Clean, modern interface with real-time error feedback
-- **Secure Configuration**: Encrypted password storage using JskToolBox crypto utilities
-- **Configuration Tool**: CLI utility for managing application settings
+- Displays two configurable Observium traffic charts for a selected year and
+  month.
+- Fetches graph images from Observium over HTTP Basic authentication.
+- Stores the Observium password in encrypted form inside `etc/obsgraph.conf`.
+- Shows backend and configuration errors directly in the web UI.
 
-## Project Overview
+## Architecture Summary
 
-- **Language**: Python 3.11+
-- **Framework**: Flask 3.0+
-- **Primary Utility Library**: `jsktoolbox@^1.2.0`
-- **HTTP Client**: `requests@^2.31.0`
-- **Package Name**: `obsgraph_flask`
-- **Dependency & Environment Manager**: Poetry
-- **Delivery Methodology**: Test-Driven Development (TDD)
+- Web framework: Flask
+- WSGI server: Gunicorn
+- Runtime Python: 3.11+
+- Dependency manager for development: Poetry
+- Production runtime: pre-created virtual environment, no Poetry required
+- Reverse proxy model: standalone virtual host or subpath such as `/flow/`
 
-## Prerequisites
+## Main Components
 
-- Python 3.11 or higher
-- Poetry (for dependency management and tool execution)
+- [`obsgraph_flask/app.py`](obsgraph_flask/app.py)
+  contains the Flask application, configuration loading, Observium requests,
+  and chart generation flow.
+- [`obsgraph_flask/wsgi.py`](obsgraph_flask/wsgi.py)
+  provides the WSGI entry point for Gunicorn.
+- [`obsgraph_flask/tools/obsgraph_configurator.py`](obsgraph_flask/tools/obsgraph_configurator.py)
+  updates the configuration file and encrypts the API password.
+- [`bin/osbgraph-config.sh`](bin/osbgraph-config.sh)
+  prepares the production virtual environment and runs the configurator.
+- [`bin/osbgraph-start.sh`](bin/osbgraph-start.sh)
+  starts Gunicorn from `.venv-prod`.
+- [`etc/systemd/obsgraph-flask.service`](etc/systemd/obsgraph-flask.service)
+  contains a sample `systemd` unit for Linux deployments.
 
-## Quick Start
+## Configuration Model
 
-### 1. Installation
+The application reads `etc/obsgraph.conf` with the main section
+`[ObsGraphFlaskApp]`.
+
+Required values:
+
+- `salt`
+- `observium_url`
+- `api_login`
+- `api_password`
+- `port_header1`
+- `port_header2`
+- `port_ids1`
+- `port_ids2`
+
+Optional values:
+
+- `graph_width` default `1024`
+- `graph_height` default `600`
+
+`port_ids1` and `port_ids2` drive chart type selection:
+
+- one ID results in `port_bits`
+- multiple comma-separated IDs result in `multi-port_bits`
+
+See [`etc/README.md`](etc/README.md)
+for the full configuration reference.
+
+## Development Setup
+
+Install dependencies with Poetry:
 
 ```bash
 git clone <repository-url>
@@ -35,285 +77,168 @@ cd ObsGraph-Flask
 poetry install
 ```
 
-This command sequence creates an isolated virtual environment and installs all runtime and development dependencies declared in `pyproject.toml`.
-
-### 2. Configuration
-
-Configure the application using the CLI tool:
+Configure the application:
 
 ```bash
 poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
-  --url "https://observium.example.com" \
+  --url "https://observium.example.com/" \
   --login "api_user" \
   --password "api_password" \
   --header1 "TASK" \
   --ids1 "496,508" \
-  --header2 "Biuro" \
+  --header2 "Office" \
   --ids2 "677" \
   --width 1024 \
   --height 600
 ```
 
-Or manually edit `etc/obsgraph.conf`:
-
-```ini
-[ObsGraphFlaskApp]
-salt = 5083235041753769
-observium_url = "https://observium.example.com/"
-api_login = "api_user"
-api_password = "encrypted_password_here"
-port_header1 = "TASK"
-port_header2 = "Biuro"
-port_ids1 = "496,508"
-port_ids2 = "677"
-graph_width = 1024
-graph_height = 600
-```
-
-**Configuration Options:**
-
-- `salt` - Application salt for password encryption (auto-generated)
-- `observium_url` - Base URL of Observium API
-- `api_login` - Observium API username
-- `api_password` - Encrypted API password
-- `port_header1` - Header rendered above the first graph
-- `port_header2` - Header rendered above the second graph
-- `port_ids1` - Port IDs for the first graph; one ID uses `port_bits`, many IDs use `multi-port_bits`
-- `port_ids2` - Port IDs for the second graph; one ID uses `port_bits`, many IDs use `multi-port_bits`
-- `graph_width` - Width of generated graphs in pixels (default: 1024)
-- `graph_height` - Height of generated graphs in pixels (default: 600)
-
-### 3. Run the Application
-
-#### Development Mode
+Run the development server:
 
 ```bash
 poetry run python obsgraph_flask/app.py
 ```
 
-The application will be available at `http://127.0.0.1:5000/`
+## Production Deployment
 
-#### Production Mode with Gunicorn
+Production deployment does not require Poetry on the target host.
+
+### 1. Prepare the runtime environment
 
 ```bash
-# Using default configuration
-poetry run gunicorn "obsgraph_flask.app:app"
-
-# Using custom configuration file
-poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.app:app"
-
-# Quick start with custom workers
-poetry run gunicorn --workers 4 --bind 0.0.0.0:8000 "obsgraph_flask.app:app"
+./bin/osbgraph-config.sh \
+  --url "https://observium.example.com/" \
+  --login "api_user" \
+  --password "api_password" \
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Office" \
+  --ids2 "677"
 ```
 
-The application will be available at `http://0.0.0.0:5000/` (or configured port)
+This script:
 
-## Development Toolkit
+- creates `.venv-prod` if needed
+- installs runtime dependencies from `requirements.txt`
+- updates `etc/obsgraph.conf`
 
-The project relies on the following tools:
-
-- `black` – opinionated code formatter (88-character line length)
-- `pytest` – primary test runner
-- `pytest-cov` – coverage reporting
-- `mypy` – static typing enforcement
-- `pycodestyle` – PEP 8 compliance checks
-- `isort` – import ordering
-
-### Frequently Used Commands
+### 2. Start Gunicorn
 
 ```bash
-# Run the full test suite with coverage
-poetry run pytest --cov=obsgraph_flask --cov-report=html
-
-# Static type checking
-poetry run mypy obsgraph_flask/
-
-# Automatic formatting and import hygiene
-poetry run black obsgraph_flask/ tests/
-poetry run isort obsgraph_flask/ tests/
-
-# Style linting
-poetry run pycodestyle obsgraph_flask/
+./bin/osbgraph-start.sh
 ```
 
-## Configuration Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `salt` | int | Yes | Salt value for password encryption |
-| `observium_url` | str | Yes | Base URL of Observium instance |
-| `api_login` | str | Yes | API username |
-| `api_password` | str | Yes | Encrypted API password |
-| `port_header1` | str | Yes | Header displayed above the first graph |
-| `port_header2` | str | Yes | Header displayed above the second graph |
-| `port_ids1` | str | Yes | Port IDs for the first graph |
-| `port_ids2` | str | Yes | Port IDs for the second graph |
-
-## Usage
-
-### Run the Application
+Override bind address or workers when needed:
 
 ```bash
-# Option 1: Direct execution
-poetry run python obsgraph_flask/app.py
-
-# Option 2: Flask development server
-poetry run flask run
-
-# Option 3: Activated virtual environment
-poetry shell
-python obsgraph_flask/app.py
+./bin/osbgraph-start.sh --bind 0.0.0.0:8123 --workers 4
 ```
 
-### Configure the Application
+The wrapper always uses [`gunicorn.conf.py`](gunicorn.conf.py)
+as the baseline configuration.
+
+### 3. Run under systemd
+
+Use the sample unit from
+[`etc/systemd/obsgraph-flask.service`](etc/systemd/obsgraph-flask.service)
+and adjust at least:
+
+- `User`
+- `Group`
+- `WorkingDirectory`
+- `ExecStart`
+
+Install it on the host:
 
 ```bash
-# Using CLI tool
-poetry run python obsgraph_flask/tools/obsgraph_configurator.py --help
-
-# Using shell wrapper
-./bin/osbgraph-config.sh --url "https://observium.example.com" --login "api" --password "secret" --header1 "TASK" --ids1 "496,508" --header2 "Biuro" --ids2 "677"
+sudo cp etc/systemd/obsgraph-flask.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now obsgraph-flask.service
 ```
 
-### Execute Tests
+### 4. Place it behind a reverse proxy
+
+ObsGraph-Flask works both:
+
+- on a dedicated virtual host
+- on a URL subpath such as `/flow/`
+
+The HTML form was adjusted to post back to the current URL, so subpath proxying
+is supported without rewriting the form action to `/`.
+
+Example Nginx location:
+
+```nginx
+location /flow/ {
+    proxy_pass http://10.0.0.20:8123/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+If the backend is reachable over a routed network, expose the Gunicorn port only
+to the reverse proxy and not to the public Internet.
+
+## Testing and Quality Checks
+
+Run the test suite:
 
 ```bash
-# Run all tests
 poetry run pytest
+```
 
-# Run with coverage report
+Run tests with coverage:
+
+```bash
 poetry run pytest --cov=obsgraph_flask --cov-report=html
 ```
 
-### Apply Formatting
+Static analysis and formatting:
 
 ```bash
-# Format code
+poetry run mypy obsgraph_flask/
 poetry run black .
-
-# Sort imports
 poetry run isort .
-
-# Check style
 poetry run pycodestyle obsgraph_flask/
 ```
 
 ## Project Layout
 
-```
+```text
 ObsGraph-Flask/
-├── obsgraph_flask/              # Application package
-│   ├── app.py                   # Main Flask application
-│   ├── lib/                     # Library modules
-│   │   └── keys.py              # Configuration keys
-│   ├── templates/               # Jinja2 templates
-│   │   └── index.html           # Main page template
-│   └── tools/                   # CLI utilities
-│       └── obsgraph_configurator.py  # Configuration tool
-├── bin/                         # Shell scripts
-│   └── osbgraph-config.sh       # Configuration wrapper script
-├── etc/                         # Configuration files
-│   ├── obsgraph.conf            # Main configuration
-│   └── README.md                # Configuration documentation
-├── tests/                       # Test suite (pytest)
-│   ├── test_app.py              # Application tests
-│   └── test_basic.py            # Basic functionality tests
-├── pyproject.toml               # Poetry configuration and dependencies
-├── poetry.lock                  # Locked dependencies
-├── README.md                    # Project overview and guidelines
-├── QUICKSTART.md                # Quick start guide
-└── AGENTS.md                    # AI assistant configuration
+├── bin/
+│   ├── osbgraph-config.sh
+│   └── osbgraph-start.sh
+├── etc/
+│   ├── obsgraph.conf
+│   ├── systemd/
+│   │   └── obsgraph-flask.service
+│   └── README.md
+├── obsgraph_flask/
+│   ├── app.py
+│   ├── wsgi.py
+│   ├── lib/
+│   │   └── keys.py
+│   ├── templates/
+│   │   └── index.html
+│   └── tools/
+│       └── obsgraph_configurator.py
+├── tests/
+├── gunicorn.conf.py
+├── pyproject.toml
+└── QUICKSTART.md
 ```
 
-## Contributing Guidelines
+## Notes
 
-The development process is anchored in **TDD**:
-
-1. **Red** – write a failing test that captures the desired behaviour.
-2. **Green** – implement the minimal code required to satisfy the test.
-3. **Refactor** – improve structure while keeping the suite green and coverage ≥ 80%.
-
-Additional expectations:
-
-- Follow PEP 8, leverage full static typing, and document public behaviour with English docstrings.
-- Keep formatting consistent by running `poetry run black` and `poetry run isort` before pushing changes.
-- Ensure `poetry run pytest`, `poetry run mypy`, and `poetry run pycodestyle` all pass locally.
-
-## Maintaining `AGENTS.md`
-
-`AGENTS.md` stores the automation playbook for AI agents collaborating on ObsGraph-Flask. The content is derived from the canonical Python template once distributed as `AGENTS-PYTEMPLATE.md`. The instructions below consolidate that template so the standalone file is no longer required.
-
-### Purpose
-
-- Document include/exclude file patterns for assistants.
-- Capture formatting, typing, and documentation standards.
-- Preserve project-specific architectural patterns (notably JskToolBox usage).
-- Define communication rules, TDD requirements, and review expectations.
-
-### Placeholder Values for ObsGraph-Flask
-
-| Placeholder        | Value                    |
-| ------------------ | ------------------------ |
-| `{PROJECT_NAME}`   | `ObsGraph-Flask`         |
-| `{PACKAGE_NAME}`   | `obsgraph_flask`         |
-| `{AUTHOR_NAME}`    | `Jacek Kotlarski`        |
-| `{AUTHOR_EMAIL}`   | `jacek.kotlarski@bioseco.com` |
-| `{PYTHON_VERSION}` | `3.11+`                  |
-| `{TEST_DIR}`       | `tests`                  |
-| `{DOCS_DIR}`       | `docs`                   |
-| `{EXAMPLES_DIR}`   | `examples` (omit if unused) |
-
-### Update Workflow
-
-1. **Source the latest template**  
-   Obtain the newest `AGENTS-PYTEMPLATE.md` from the JskToolBox knowledge base or the internal templates repository.
-2. **Copy to the project root**  
-   Place the template alongside `AGENTS.md` to ease comparison.
-3. **Replace placeholders**  
-   Substitute all `{PLACEHOLDER}` entries with the values above. Example commands (GNU `sed`):
-   ```bash
-   sed -i 's/{PROJECT_NAME}/ObsGraph-Flask/g' AGENTS.md
-   sed -i 's/{PACKAGE_NAME}/obsgraph_flask/g' AGENTS.md
-   sed -i 's/{AUTHOR_NAME}/Jacek Kotlarski/g' AGENTS.md
-   sed -i 's/{AUTHOR_EMAIL}/jacek.kotlarski@bioseco.com/g' AGENTS.md
-   sed -i 's/{PYTHON_VERSION}/3.11+/g' AGENTS.md
-   sed -i 's/{TEST_DIR}/tests/g' AGENTS.md
-   sed -i 's/{DOCS_DIR}/docs/g' AGENTS.md
-   sed -i 's/{EXAMPLES_DIR}/examples/g' AGENTS.md
-   ```
-4. **Tailor project-specific sections**  
-   - Keep the “Use JskToolBox” chapter; it applies directly to ObsGraph-Flask.  
-   - Expand “Project-specific rules” with any new architectural or domain guidelines.  
-   - Remove template comment blocks (`<!-- ... -->`) after verification.
-5. **Verify consistency**  
-   Confirm that docstring, testing, and formatting directives align with current tooling.
-6. **Delete the temporary template**  
-   Remove `AGENTS-PYTEMPLATE.md` once the transfer is complete to avoid duplication.
-7. **Commit the changes**  
-   Example message: `docs: refresh AI agent configuration`.
-
-### Customisation Checklist
-
-- [ ] Docstrings updated first, then API docs, then Markdown (documentation-first rule).
-- [ ] Sections about `ReadOnlyClass`, `BData`, lazy imports, and `Raise.error` remain accurate.
-- [ ] Testing and coverage thresholds in `AGENTS.md` reflect the current project expectations.
-- [ ] Communication language rules mirror project policy (Polish responses, English code/docs).
-- [ ] Git workflow details stay aligned with the repository conventions.
-
-### Template Compatibility
-
-The integrated instructions are validated with:
-
-- GitHub Copilot
-- Google Gemini
-- Claude (Anthropic)
-- OpenAI models (Codex, GPT)
-- Any assistant that consumes Markdown configuration files
+- The shell wrappers intentionally use the historical `osbgraph-*` naming kept
+  by the repository.
+- The project documentation is written in English; code comments and docstrings
+  should remain in English as well.
+- Development follows TDD: write the failing test first, then implement, then
+  refactor.
 
 ## License
 
-[Specify license here]
-
-## Author
-
-Jacek Kotlarski `<jacek.kotlarski@bioseco.com>`
+MIT

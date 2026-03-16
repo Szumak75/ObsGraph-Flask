@@ -1,182 +1,156 @@
-# ObsGraph Flask - Quick Start
+# ObsGraph-Flask Quick Start
 
-## Wstępna konfiguracja
+## Development
 
-### 1. Instalacja zależności
+### 1. Install dependencies
+
 ```bash
 cd ObsGraph-Flask
 poetry install
 ```
 
-### 2. Konfiguracja połączenia z Observium
+### 2. Configure the application
 
-#### Opcja A: Użycie narzędzia CLI
+Use the CLI directly:
+
 ```bash
 poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
-  --url "https://observium.bioseco.com" \
+  --url "https://observium.bioseco.com/" \
   --login "api" \
   --password "your_password" \
   --header1 "TASK" \
   --ids1 "496,508" \
-  --header2 "Biuro" \
+  --header2 "Office" \
+  --ids2 "677" \
+  --width 1024 \
+  --height 600
+```
+
+Or use the wrapper:
+
+```bash
+./bin/osbgraph-config.sh \
+  --url "https://observium.bioseco.com/" \
+  --login "api" \
+  --password "your_password" \
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Office" \
   --ids2 "677"
 ```
 
-#### Opcja B: Ręczna edycja pliku konfiguracyjnego
-Edytuj plik `etc/obsgraph.conf`:
-```ini
-[ObsGraphFlaskApp]
-salt = 5083235041753769
-observium_url = "https://observium.bioseco.com/"
-api_login = "api"
-api_password = "encrypted_password"
-port_header1 = "TASK"
-port_header2 = "Biuro"
-port_ids1 = "496,508"
-port_ids2 = "677"
-```
+### 3. Run the application
 
-**Uwaga**: Hasło musi być zaszyfrowane przy użyciu `SimpleCrypto.multiple_encrypt()` z JskToolBox.
+Development server:
 
-## Uruchomienie aplikacji
-
-### Opcja 1: Development mode
 ```bash
 poetry run python obsgraph_flask/app.py
 ```
 
-### Opcja 2: Production mode (Gunicorn)
+Development Gunicorn run:
+
 ```bash
-# Podstawowe uruchomienie
-poetry run gunicorn "obsgraph_flask.app:app"
-
-# Z plikiem konfiguracyjnym
-poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.app:app"
-
-# Niestandardowa konfiguracja
-poetry run gunicorn --workers 4 --bind 0.0.0.0:8000 --timeout 60 "obsgraph_flask.app:app"
+poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.wsgi:app"
 ```
 
-### Opcja 2: Przez aktywowane środowisko wirtualne
+## Production
+
+### 1. Create the production virtual environment
+
 ```bash
-poetry shell
-python obsgraph_flask/app.py
+./bin/osbgraph-config.sh \
+  --url "https://observium.bioseco.com/" \
+  --login "api" \
+  --password "your_password" \
+  --header1 "TASK" \
+  --ids1 "496,508" \
+  --header2 "Office" \
+  --ids2 "677"
 ```
 
-Aplikacja będzie dostępna pod adresem: http://127.0.0.1:5000/
+This creates `.venv-prod`, installs runtime dependencies, and updates
+`etc/obsgraph.conf`.
 
-## Funkcjonalność
+### 2. Start Gunicorn without Poetry
 
-- **Wybór roku**: Lista rozwijana z bieżącym rokiem i 1 rokiem wstecz
-- **Wybór miesiąca**: Lista rozwijana z miesiącami w formacie cyfrowym (01-12)
-- **Przycisk Submit**: Zatwierdza wybór i pobiera wykresy z Observium API
-- **Wyświetlanie wykresów**: Dwa wykresy wyświetlane jeden pod drugim z nagłówkami z konfiguracji
-- **Obsługa błędów**: Komunikaty o błędach wyświetlane w czerwonej stopce
-- **Responsywność**: Interfejs dostosowuje się do rozmiaru ekranu
-
-## Walidacja kodu
-
-### Sprawdzanie typów (mypy)
 ```bash
+./bin/osbgraph-start.sh
+```
+
+Example with explicit bind:
+
+```bash
+./bin/osbgraph-start.sh --bind 0.0.0.0:8123
+```
+
+### 3. Run with systemd
+
+Copy the sample unit:
+
+```bash
+sudo cp etc/systemd/obsgraph-flask.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now obsgraph-flask.service
+```
+
+Check service status:
+
+```bash
+sudo systemctl status obsgraph-flask.service
+sudo journalctl -u obsgraph-flask.service -n 50 --no-pager
+```
+
+## Reverse Proxy Notes
+
+The application can be published:
+
+- on its own host name
+- under a subpath such as `/flow/`
+
+The HTML form posts back to the current URL, so reverse proxying under a
+subpath works without additional application changes.
+
+Example Nginx snippet:
+
+```nginx
+location /flow/ {
+    proxy_pass http://backend-host:8123/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+## Test and Validation Commands
+
+```bash
+poetry run pytest
+poetry run pytest --cov=obsgraph_flask --cov-report=html
 poetry run mypy obsgraph_flask/
-```
-
-### Formatowanie kodu (black)
-```bash
-poetry run black obsgraph_flask/
-```
-
-### Sprawdzanie stylu (pycodestyle)
-```bash
+poetry run black .
+poetry run isort .
 poetry run pycodestyle obsgraph_flask/
 ```
 
-### Sortowanie importów (isort)
-```bash
-poetry run isort obsgraph_flask/
-```
+## Minimal Project Structure
 
-### Testy z pokryciem kodu
-```bash
-# Uruchom wszystkie testy
-poetry run pytest
-
-# Testy z raportem pokrycia
-poetry run pytest --cov=obsgraph_flask
-
-# Testy z HTML raportem pokrycia
-poetry run pytest --cov=obsgraph_flask --cov-report=html
-# Raport: htmlcov/index.html
-```
-
-## Test-Driven Development (TDD)
-
-Projekt stosuje metodologię TDD. Przy dodawaniu nowej funkcjonalności:
-
-### Krok 1: Napisz test (RED)
-```bash
-# Utwórz test w tests/test_feature.py
-poetry run pytest tests/test_feature.py
-# Test powinien nie przejść (RED)
-```
-
-### Krok 2: Implementuj funkcjonalność (GREEN)
-```python
-# Napisz minimalny kod w obsgraph_flask/feature.py
-# aby test przeszedł
-```
-
-### Krok 3: Sprawdź czy test przechodzi
-```bash
-poetry run pytest tests/test_feature.py
-# Test powinien przejść (GREEN)
-```
-
-### Krok 4: Refaktoryzacja
-```python
-# Popraw kod zachowując przechodzące testy
-# Uruchamiaj testy po każdej zmianie
-```
-
-### Krok 5: Walidacja kompletna
-```bash
-# Wszystkie testy
-poetry run pytest
-
-# Pokrycie kodu (cel: ≥80%)
-poetry run pytest --cov=obsgraph_flask --cov-report=term-missing
-
-# Sprawdzenie typów
-poetry run mypy obsgraph_flask/
-
-# Formatowanie
-poetry run black obsgraph_flask/
-```
-
-## Struktura projektu
-
-```
+```text
 obsgraph_flask/
-├── app.py                  # Główna aplikacja Flask
-└── templates/
-    └── index.html          # Szablon HTML z formularzem
+├── app.py
+├── wsgi.py
+├── lib/
+│   └── keys.py
+├── templates/
+│   └── index.html
+└── tools/
+    └── obsgraph_configurator.py
 
-tests/
-└── test_*.py              # Testy jednostkowe
+bin/
+├── osbgraph-config.sh
+└── osbgraph-start.sh
+
+etc/
+├── obsgraph.conf
+└── systemd/obsgraph-flask.service
 ```
-
-## Wymogi dotyczące typowania
-
-Projekt wymaga **pełnego typowania** zgodnie z PEP 484 i PEP 526:
-- Wszystkie zmienne muszą mieć zadeklarowany typ
-- Wszystkie argumenty funkcji muszą mieć type hints
-- Wszystkie funkcje muszą mieć zadeklarowany typ zwracany
-- Konfiguracja mypy wymusza te zasady poprzez `disallow_untyped_defs`
-
-## Wymogi dotyczące testów
-
-- **Metodologia**: TDD - testy przed implementacją
-- **Framework**: pytest
-- **Lokalizacja**: katalog `tests/`
-- **Pokrycie**: minimum 80%
-- **Typowanie**: testy też muszą być w pełni typowane
