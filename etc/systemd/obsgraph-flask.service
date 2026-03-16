@@ -5,8 +5,8 @@ Wants=network.target
 
 [Service]
 Type=simple
-User=obsgraph
-Group=www-data
+User=root
+Group=root
 WorkingDirectory=/opt/ObsGraph-Flask
 ExecStart=/opt/ObsGraph-Flask/bin/osbgraph-start.sh --bind 0.0.0.0:8123
 Restart=always
