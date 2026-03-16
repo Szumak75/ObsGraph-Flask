@@ -60,6 +60,17 @@ class TestIndexRoute:
         response: Any = client.get("/")
         assert b"text/html" in response.content_type.encode()
 
+    def test_index_form_does_not_post_to_domain_root(
+        self, client: FlaskClient
+    ) -> None:
+        """Test that form submission targets the current URL, not domain root.
+
+        ### Arguments:
+        * client: FlaskClient - The test client fixture.
+        """
+        response: Any = client.get("/")
+        assert b'action="/"' not in response.data
+
     def test_index_contains_current_year(self, client: FlaskClient) -> None:
         """Test that index page contains current year.
 
