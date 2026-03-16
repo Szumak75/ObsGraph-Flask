@@ -1,0 +1,21 @@
+[Unit]
+Description=ObsGraph-Flask Gunicorn backend
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=obsgraph
+Group=www-data
+WorkingDirectory=/opt/ObsGraph-Flask
+ExecStart=/opt/ObsGraph-Flask/bin/osbgraph-start.sh --bind 0.0.0.0:8123
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+KillSignal=SIGTERM
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
