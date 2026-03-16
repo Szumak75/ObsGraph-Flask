@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # obsgraph-config.sh
 # Purpose: Set up environment variables for ObsGraph Flask application
 
