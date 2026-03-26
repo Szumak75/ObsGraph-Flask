@@ -15,7 +15,7 @@ Use the CLI directly:
 
 ```bash
 poetry run python obsgraph_flask/tools/obsgraph_configurator.py \
-  --url "https://observium.bioseco.com/" \
+  --url "https://observium.example.com/" \
   --login "api" \
   --password "your_password" \
   --header1 "TASK" \
@@ -30,7 +30,7 @@ Or use the wrapper:
 
 ```bash
 ./bin/osbgraph-config.sh \
-  --url "https://observium.bioseco.com/" \
+  --url "https://observium.example.com/" \
   --login "api" \
   --password "your_password" \
   --header1 "TASK" \
@@ -59,7 +59,7 @@ poetry run gunicorn --config gunicorn.conf.py "obsgraph_flask.wsgi:app"
 
 ```bash
 ./bin/osbgraph-config.sh \
-  --url "https://observium.bioseco.com/" \
+  --url "https://observium.example.com/" \
   --login "api" \
   --password "your_password" \
   --header1 "TASK" \
